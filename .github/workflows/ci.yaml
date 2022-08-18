@@ -1,0 +1,32 @@
+name: ci
+on:
+  push:
+    branches: '*'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+           ref: ${{ github.event.pull_request.head.ref }}
+      - uses: TimonVS/pr-labeler-action@v3.1.0
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/install-nix-action@v17
+      - uses: cachix/cachix-action@v10
+        with:
+          name: cachix-action
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - name: Tests
+        run: nix develop -c go test -v ./...
+      - name: Formatter
+        run: nix develop -c go fmt || true
+      - name: Linter
+        run: nix develop -c golangci-lint run || true
+      - name: Push changes
+        uses: stefanzweifel/git-auto-commit-action@v4.14.1
+        with:
+          commit_message: Run formatter/linter
