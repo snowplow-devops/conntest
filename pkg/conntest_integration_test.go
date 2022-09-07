@@ -28,8 +28,8 @@ func TestCheck(t *testing.T) {
 	}
 
 	tags := map[string]string{}
-	actual := Check(*dsn, tags)
-	expected := Result{dsn.Host, "ok", []string{}, tags}
+	actual := Check(*dsn, tags, 1)
+	expected := Result{dsn.Host, true, []string{}, tags, 1}
 
 	if !reflect.DeepEqual(actual.Data, expected) {
 		t.Fail()
@@ -73,7 +73,7 @@ func SetupTestDatabase(ctx context.Context) (testcontainers.Container, string, e
 		return nil, "", err
 	}
 
-	dsn := fmt.Sprintf("postgres://%v:%v@%v:%v/%v", user, password, host, port.Port(), db)
+	dsn := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable", user, password, host, port.Port(), db)
 
 	return dbContainer, dsn, err
 }

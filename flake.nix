@@ -1,5 +1,5 @@
 {
-  description = "applications for recovering snowplow bad rows";
+  description = "connection testing utility for snowplow destinations";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
@@ -14,10 +14,10 @@
             config.allowUnsupportedSystem = true;
           }; in {
             devShell = import ./shell.nix { inherit pkgs; };
-            default = pkgs.buildGoModule {
+            defaultPackage = pkgs.buildGoModule {
               pname = "conntest";
-              version = "0.0.1";
-              src = ./.;
+              version = "0.1.0";
+              src = self;
               vendorSha256 = "";
             };
           }

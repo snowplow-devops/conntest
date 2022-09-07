@@ -19,8 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var tags string
-
 var rootCmd = &cobra.Command{
 	Use:   "conntest",
 	Short: "Connection testing for Snowplow destinations",
@@ -36,7 +34,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&tags, "tags", "", "(optional) tags in form of \"key1=value1;key2=value2\"")
+	// rootCmd.PersistentFlags().VarP(tags, "tags", "", "optional tags")
 }
-
-

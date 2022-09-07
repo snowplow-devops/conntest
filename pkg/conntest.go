@@ -3,25 +3,15 @@ package pkg
 import (
 	"database/sql"
 	"errors"
-	"strings"
+	"fmt"
+	"io"
+	"os"
 
 	retry "github.com/avast/retry-go/v4"
 	_ "github.com/lib/pq"
-	_ "github.com/snowflakedb/gosnowflake"
+	"github.com/snowflakedb/gosnowflake"
 	"github.com/xo/dburl"
 )
-
-func ParseTags(raw string) map[string]string {
-	splits := strings.Split(strings.Trim(raw, ";"), ";")
-	tags := map[string]string{}
-
-	for _, split := range splits {
-		split := strings.Split(split, "=")
-		tags[split[0]] = split[1]
-	}
-
-	return tags
-}
 
 func DB(rawUri string) (*dburl.URL, error) {
 	dsn, err := dburl.Parse(rawUri)
@@ -33,19 +23,22 @@ func DB(rawUri string) (*dburl.URL, error) {
 	}
 }
 
-func Check(uri dburl.URL, tags map[string]string) Event {
+func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 	var connErr, queryErr error
+	gosnowflake.GetLogger().SetOutput(io.Discard)
+
 	retry.Do(func() error {
-		db, connErr := connect(uri.String())
-		_, queryErr := query(db, uri.Driver)
+		db, connErrN := connect(uri.String())
+		_, queryErrN := query(db, uri.Driver)
 		if connErr != nil {
 			db.Close()
 		}
-
+		connErr = connErrN
+		queryErr = queryErrN
 		return queryErr
-	})
+	}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) { fmt.Fprintln(os.Stderr, "Retrying becuse of", err.Error()) }))
 
-	return NewEvent(NewResult(uri.Host, connErr, queryErr, tags))
+	return NewEvent(NewResult(uri.Host, connErr, queryErr, tags, retryTimes))
 }
 
 func queryFor(driver string) string {
