@@ -17,12 +17,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/snowplow/conntest/pkg"
 	"github.com/spf13/cobra"
 )
 
 var dsn string
+var tags tagsVar
+var retryTimes uint
 var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "A brief description of your command",
@@ -30,16 +33,9 @@ var checkCmd = &cobra.Command{
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var tags = map[string]string{}
-
-		tagsStr, terr := cmd.Flags().GetString("tags")
-		if terr == nil && tagsStr != "" {
-			tags = pkg.ParseTags(tagsStr)
-		}
-
 		dsn, err := pkg.DB(dsn)
 		if err == nil {
-			event := pkg.Check(*dsn, tags)
+			event := pkg.Check(*dsn, tags, retryTimes)
 			res, _ := json.Marshal(event)
 			fmt.Println(string(res))
 		} else {
@@ -49,7 +45,31 @@ to quickly create a Cobra application.`,
 	},
 }
 
+type tagsVar map[string]string
+
+func (t *tagsVar) String() string {
+	return fmt.Sprint(*t)
+}
+func (t *tagsVar) Set(value string) error {
+	splits := strings.Split(strings.Trim(value, ";"), ";")
+	tags := map[string]string{}
+
+	for _, split := range splits {
+		split := strings.Split(split, "=")
+		tags[split[0]] = split[1]
+	}
+
+	*t = tagsVar(tags)
+	return nil
+}
+
+func (t *tagsVar) Type() string {
+	return "tagsVar"
+}
+
 func init() {
 	rootCmd.AddCommand(checkCmd)
 	checkCmd.Flags().StringVarP(&dsn, "dsn", "d", "", "database DSN")
+	checkCmd.Flags().UintVarP(&retryTimes, "retry-times", "r", 1, "number of times to retry using exponential time")
+	checkCmd.PersistentFlags().VarP(&tags, "tags", "", "optional tags")
 }

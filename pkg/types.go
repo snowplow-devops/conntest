@@ -17,7 +17,7 @@ type Event struct {
 
 func NewEvent(result Result) Event {
 	name := "fabric:warehouse-connection-check"
-	emittedBy := "connection-test"
+	emittedBy := "conntest"
 	version := 1
 
 	return Event{uuid.New(), name, version, emittedBy, time.Now(), result}
@@ -25,12 +25,13 @@ func NewEvent(result Result) Event {
 
 type Result struct {
 	Host     string            `json:"host"`
-	Status   string            `json:"status"`
+	Complete bool              `json:"complete"`
 	Messages []string          `json:"messages"`
 	Tags     map[string]string `json:"tags"`
+  Attempts uint              `json:"attempts"`
 }
 
-func NewResult(host string, connError error, queryError error, tags map[string]string) Result {
+func NewResult(host string, connError error, queryError error, tags map[string]string, attempts uint) Result {
 	messages := []string{}
 
 	if connError != nil {
@@ -41,15 +42,5 @@ func NewResult(host string, connError error, queryError error, tags map[string]s
 		messages = append(messages, queryError.Error())
 	}
 
-	return Result{host, status(queryError), messages, tags}
+	return Result{host, connError == nil && queryError == nil, messages, tags, attempts}
 }
-
-func status(err error) string {
-	status := "ok"
-	if err != nil {
-		status = "error"
-	}
-
-	return status
-}
-
