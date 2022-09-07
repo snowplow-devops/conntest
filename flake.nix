@@ -18,7 +18,7 @@
               pname = "conntest";
               version = self.shortRev or "${self.lastModifiedDate}-dirty";
               src = self;
-              vendorSha256 = "";
+              vendorSha256 = "gfYzoditeKWwguNhBtCt3g4yB53LsAxFQhuPbZABYHE=";
             };
           }
     );
