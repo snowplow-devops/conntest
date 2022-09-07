@@ -16,7 +16,7 @@
             devShell = import ./shell.nix { inherit pkgs; };
             defaultPackage = pkgs.buildGoModule {
               pname = "conntest";
-              version = "0.1.0";
+              version = self.shortRev or "${self.lastModifiedDate}-dirty";
               src = self;
               vendorSha256 = "";
             };

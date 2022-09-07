@@ -26,6 +26,8 @@ jobs:
         run: nix develop -c go fmt ./... || true
       - name: Linter
         run: nix develop -c golangci-lint run || true
+      - name: Build
+        run: nix build
       - name: Push changes
         uses: stefanzweifel/git-auto-commit-action@v4.14.1
         with:
