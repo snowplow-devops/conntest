@@ -23,7 +23,7 @@ jobs:
       - name: Tests
         run: nix develop -c go test -v ./...
       - name: Formatter
-        run: nix develop -c go fmt || true
+        run: nix develop -c go fmt ./... || true
       - name: Linter
         run: nix develop -c golangci-lint run || true
       - name: Push changes

@@ -16,21 +16,11 @@ jobs:
       - name: Tests
         run: nix develop -c go test -v ./...
       - name: Formatter
-        run: nix develop -c go fmt
+        run: nix develop -c go fmt ./...
       - name: Linter
         run: nix develop -c golangci-lint run || true
-      - name: Extract tag version from ref, and project version from file
-        id: version
-        run: |
-          echo ::set-output name=VERSION_FILE::"refs/tags/$(cat VERSION)"
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-          check-latest: true
-          cache: true
       - name: Build
-        run: go build
+        run: nix develop -c go build
       - name: Create Release
         uses: actions/create-release@v1
         env:
