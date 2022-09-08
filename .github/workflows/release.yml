@@ -14,13 +14,13 @@ jobs:
           name: cachix-action
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: Tests
-        run: nix develop -c go test -v ./...
+        run: nix develop -c go test -v ./... -test.short
       - name: Formatter
         run: nix develop -c go fmt ./...
       - name: Linter
         run: nix develop -c golangci-lint run || true
       - name: Build
-        run: nix develop -c go build
+        run: nix develop -c 'go build && gzip ./conntest'
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -35,4 +35,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          asset_paths: '["./conntest"]'
+          asset_paths: '["./conntest", "conntest.gz"]'
