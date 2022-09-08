@@ -1,0 +1,34 @@
+name-template: '$RESOLVED_VERSION'
+tag-template: '$RESOLVED_VERSION'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch  
+exclude-labels:
+  - 'auto-update'
+  - 'auto-documentation'
+  - 'auto-changelog'
+  # - 'release'
+categories:
+  - title: 'Breaking changes'
+    label: 'breaking-change'
+  - title: 'Features'
+    label: 'enhancement'
+  - title: 'Documentation'
+    label: 'documentation'
+  - title: 'Bug Fixes'
+    labels: 'bug'
+  - title: 'Dependency updates'
+    labels:
+      - 'dependency-update'
+      - 'snyk'
+template: |
+  # Changes
+  $CHANGES

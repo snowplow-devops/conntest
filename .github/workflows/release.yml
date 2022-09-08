@@ -14,13 +14,20 @@ jobs:
           name: cachix-action
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: Tests
-        run: nix develop -c go test -v ./...
+        run: nix develop -c go test -v ./... -test.short
       - name: Formatter
         run: nix develop -c go fmt ./...
       - name: Linter
         run: nix develop -c golangci-lint run || true
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+          check-latest: true
       - name: Build
-        run: nix develop -c go build
+        run: go build
+      - name: Compress
+        run: nix develop -c tar czvf conntest.tar.gz conntest
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -35,4 +42,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          asset_paths: '["./conntest"]'
+          asset_paths: '["./conntest.tar.gz"]'

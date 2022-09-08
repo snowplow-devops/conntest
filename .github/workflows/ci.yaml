@@ -21,11 +21,13 @@ jobs:
           name: cachix-action
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: Tests
-        run: nix develop -c go test -v ./...
+        run: nix develop -c go test -v ./... -test.short
       - name: Formatter
         run: nix develop -c go fmt ./... || true
       - name: Linter
         run: nix develop -c golangci-lint run || true
+      - name: Build
+        run: nix develop -c go build
       - name: Push changes
         uses: stefanzweifel/git-auto-commit-action@v4.14.1
         with:
