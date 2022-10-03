@@ -8,6 +8,7 @@ import (
 	"os"
 
 	retry "github.com/avast/retry-go/v4"
+	_ "github.com/databricks/databricks-sql-go"
 	_ "github.com/lib/pq"
 	"github.com/snowflakedb/gosnowflake"
 	"github.com/xo/dburl"
@@ -43,8 +44,9 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 
 func queryFor(driver string) string {
 	dbs := map[string]string{
-		"postgres":  `SELECT * FROM information_schema.information_schema_catalog_name;`,
-		"snowflake": `SELECT * FROM information_schema.information_schema_catalog_name;`,
+		"databricks": `SELECT * FROM information_schema.information_schema_catalog_name;`,
+		"postgres":   `SELECT * FROM information_schema.information_schema_catalog_name;`,
+		"snowflake":  `SELECT * FROM information_schema.information_schema_catalog_name;`,
 	}
 
 	return dbs[driver]
