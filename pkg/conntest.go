@@ -44,7 +44,7 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 
 func queryFor(driver string) string {
 	dbs := map[string]string{
-		"databricks": `SELECT * FROM information_schema.information_schema_catalog_name;`,
+		"databricks": `SELECT 1;`,
 		"postgres":   `SELECT * FROM information_schema.information_schema_catalog_name;`,
 		"snowflake":  `SELECT * FROM information_schema.information_schema_catalog_name;`,
 	}
