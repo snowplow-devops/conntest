@@ -1,2 +1,2 @@
 * conntest
-Conntest is a simple utility that checks connections to Snowplow-supported destionations.
+Conntest is a simple utility that checks connections to Snowplow-supported destinations.
