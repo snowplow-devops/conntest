@@ -33,6 +33,7 @@ var checkCmd = &cobra.Command{
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		pkg.RegisterDatabricks()
 		dsn, err := pkg.DB(dsn)
 		if err == nil {
 			event := pkg.Check(*dsn, tags, retryTimes)
