@@ -37,7 +37,7 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 		connErr = connErrN
 		queryErr = queryErrN
 		return queryErr
-	}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) { fmt.Fprintln(os.Stderr, "Retrying becuse of", err.Error()) }))
+	}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) { fmt.Fprintln(os.Stderr, "Retrying because of", err.Error()) }))
 
 	return NewEvent(NewResult(uri.Host, connErr, queryErr, tags, retryTimes))
 }
