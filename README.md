@@ -4,35 +4,55 @@
 
 ## Overview
 
-Conntest is a simple utility that checks connections to Snowplow-supported destinations written in Go.
+Conntest is a command-line utility for validating connections to Snowplow-supported destinations.
 
-## Quick start
+## Running
 
-Install `nix` using `brew install nix`.
+To check your database connection, run:
+```shell
+conntest check --dsn your://database/uri --retry-times 0 --tags 'aTag=value;anotherTag=value'
+```
+### Example
 
-To check the format of the go code :-
+```shell
+$ conntest check --tags aTag=value --dsn snowflake://lorem:ipsum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH
 
-```nix
-nix develop --extra-experimental-features nix-command --extra-experimental-features flakes -c go fmt ./...
+{"id":"b732dd11-428d-4063-aa35-118e0e8ab51f","name":"fabric:warehouse-connection-check","version":1,"emittedBy":"conntest","timestamp":"2022-10-10T08:36:27.832840488Z","data":{"host":"abcdefg-ab01234.snowflakecomputing.com","complete":false,"messages":["HTTP Response code: 500"],"tags":{"aTag":"value"},"attempts":1}}
 ```
 
-To build the go code :-
 
-```nix
-nix develop --extra-experimental-features nix-command --extra-experimental-features flakes -c go build
+## Development
+
+This repo uses nix to provide [reproducible development environment](https://nixos.org/guides/ad-hoc-developer-environments.html). To make use of the provided setup:
+
+1. Install `nix`:
+```shell
+sh <(curl -L https://nixos.org/nix/install)
+```
+2. Enable experimental flags
+``` shell
+mkdir -p ~/.config/nix && echo 'experimental-features = nix-command flakes' > ~/.config/nix/nix.conf
+```
+3. Enter development environment
+```shell
+nix develop
 ```
 
-To run short tests (no Docker required) :-
+> **Note**
+> If you want the convenience of getting the development environment upon `cd` into directory use [direnv](https://direnv.net)
 
-```nix
-nix develop --extra-experimental-features nix-command --extra-experimental-features flakes -c go test -v ./... -test.short
+4. Develop
+```
+# format
+go fmt ./...
+# build
+go build
+# test
+go test -v ./... -test.short
+# test with integration tests
+go test -v ./...
 ```
 
-To run longer tests (running Docker required) :-
-
-```nix
-nix develop --extra-experimental-features nix-command --extra-experimental-features flakes -c go test -v ./...
-```
 
 ### Copyright and license
 
