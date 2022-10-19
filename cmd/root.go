@@ -32,7 +32,3 @@ func Execute() {
 		os.Exit(1)
 	}
 }
-
-func init() {
-	// rootCmd.PersistentFlags().VarP(tags, "tags", "", "optional tags")
-}
