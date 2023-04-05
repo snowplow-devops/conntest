@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	retry "github.com/avast/retry-go/v4"
 	_ "github.com/databricks/databricks-sql-go"
@@ -42,15 +43,32 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 	gosnowflake.GetLogger().SetOutput(io.Discard)
 
 	retry.Do(func() error {
+		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection attempt ")
 		db, connErrN := connect(uri.String())
+		if connErrN != nil {
+			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection error "+connErrN.Error())
+		} else {
+			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection acquired")
+		}
+
+		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query attempt")
 		_, queryErrN := query(db, uri.Driver)
+		if queryErrN != nil {
+			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query error "+queryErrN.Error())
+		} else {
+			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query actioned")
+		}
+
 		if connErr != nil {
 			db.Close()
 		}
+
 		connErr = connErrN
 		queryErr = queryErrN
 		return queryErr
-	}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) { fmt.Fprintln(os.Stderr, "Retrying because of", err.Error()) }))
+	}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) {
+		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Retrying because of "+err.Error())
+	}))
 
 	return NewEvent(NewResult(uri.Host, connErr, queryErr, tags, retryTimes))
 }
