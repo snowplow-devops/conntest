@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"time"
 
@@ -29,11 +30,23 @@ import (
 )
 
 func DB(rawUri string) (*dburl.URL, error) {
+
+	print(rawUri)
+	print("\n")
 	dsn, err := dburl.Parse(rawUri)
 
-	// Password needs sanitising here
+	l, _ := url.Parse(rawUri)
+
+	// username
+	fmt.Println("user:", l.User.Username())
+
+	//password
+	p, _ := l.User.Password()
+	fmt.Println("pass:", p)
 
 	if err == nil {
+		print(dsn)
+
 		return dsn, nil
 	} else {
 		return nil, errors.New("Can't parse DSN URI")

@@ -50,7 +50,8 @@ func TestDBSnowflakeValid(t *testing.T) {
 }
 
 func TestDBSnowflakeInvalidEscapeChar(t *testing.T) {
-	_, err := DB("snowflake://lorem:ip%sum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+	// The entity is encoded in the conntest handler
+	_, err := DB("snowflake://lorem:ip%25sum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
 
 	// // Password needs sanitising here
 	// pass, _ := dsn.User.Password()
@@ -63,7 +64,8 @@ func TestDBSnowflakeInvalidEscapeChar(t *testing.T) {
 }
 
 func TestDBSnowflakeInvalidAmpersand(t *testing.T) {
-	_, err := DB("snowflake://lorem:i&psum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+	// The entity is encoded in the conntest handler
+	_, err := DB("snowflake://lorem:i%40psum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
 
 	// // Password needs sanitising here
 	// pass, _ := dsn.User.Password()
