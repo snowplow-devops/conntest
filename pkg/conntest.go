@@ -31,6 +31,8 @@ import (
 func DB(rawUri string) (*dburl.URL, error) {
 	dsn, err := dburl.Parse(rawUri)
 
+	// Password needs sanitising here
+
 	if err == nil {
 		return dsn, nil
 	} else {

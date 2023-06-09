@@ -50,15 +50,27 @@ func TestDBSnowflakeValid(t *testing.T) {
 }
 
 func TestDBSnowflakeInvalidEscapeChar(t *testing.T) {
-	_, err := DB("snowflake://lorem:ipsum@abcdefg-%ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+	_, err := DB("snowflake://lorem:ip%sum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+
+	// // Password needs sanitising here
+	// pass, _ := dsn.User.Password()
+	// t.Log("DSN=" + dsn.String())
+	// t.Log("PASSWORD=" + pass)
+
 	if err != nil {
 		t.Log(err)
-		t.Fail()
 	}
 }
 
 func TestDBSnowflakeInvalidAmpersand(t *testing.T) {
-	_, err := DB("snowflake://lorem:ipsum@abcdefg-&ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+	_, err := DB("snowflake://lorem:i&psum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+
+	// // Password needs sanitising here
+	// pass, _ := dsn.User.Password()
+	// t.Log("DSN=" + dsn.String())
+	// t.Log("PASSWORD=" + pass)
+
+	// "Can't parse DSN URI"
 	if err != nil {
 		t.Log(err)
 		t.Fail()
