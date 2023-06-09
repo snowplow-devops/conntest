@@ -41,6 +41,22 @@ func TestQueryForSnowflake(t *testing.T) {
 	}
 }
 
+func TestDBSnowflakeValid(t *testing.T) {
+	_, err := DB("snowflake://lorem:ipsum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+	if err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+}
+
+func TestDBSnowflakeInvalidEscapeChar(t *testing.T) {
+	_, err := DB("snowflake://lorem:ipsum@abcdefg-%ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+	if err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+}
+
 func TestMarshall(t *testing.T) {
 	event := NewEvent(NewResult("lorem", nil, nil, map[string]string{"lorem": "ipsum"}, 1))
 	var unmarshaled Event
