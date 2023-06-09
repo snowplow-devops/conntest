@@ -20,8 +20,22 @@ import (
 	"testing"
 )
 
-func TestQueryFor(t *testing.T) {
+func TestQueryForDatabricks(t *testing.T) {
+	res := queryFor("databricks")
+	if !strings.Contains(res, "SELECT 1;") {
+		t.Fail()
+	}
+}
+
+func TestQueryForPostgres(t *testing.T) {
 	res := queryFor("postgres")
+	if !strings.Contains(res, "information_schema") {
+		t.Fail()
+	}
+}
+
+func TestQueryForSnowflake(t *testing.T) {
+	res := queryFor("snowflake")
 	if !strings.Contains(res, "information_schema") {
 		t.Fail()
 	}
