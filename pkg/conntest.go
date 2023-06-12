@@ -31,6 +31,11 @@ import (
 
 func DB(rawUri string) (*dburl.URL, error) {
 
+	// net/url copes with encoded entities except does require colon's to be colons as they are value separators
+	// dburl does not cope with encoded entities, it flattens them out
+	//
+	// need to ensure that the passed URI is returned as a dburl (net/url object with some additional fields) but
+	// with the password still encoded
 	print(rawUri)
 	print("\n")
 	dsn, err := dburl.Parse(rawUri)
@@ -43,13 +48,8 @@ func DB(rawUri string) (*dburl.URL, error) {
 	escapedValue := url.QueryEscape(originalValue)
 	fmt.Println("pass:", escapedValue)
 
-	// dsn = strings.Replace(stringUrl.String(), originalValue, escapedValue, 1)
-
-	// q, _ := stringUrl.User.Password()
-	// fmt.Println("pass:", q)
-
 	if err == nil {
-		print(dsn)
+		fmt.Println("dsn:", dsn)
 		return dsn, nil
 	} else {
 		return nil, errors.New("Can't parse DSN URI")
@@ -61,7 +61,7 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 	gosnowflake.GetLogger().SetOutput(io.Discard)
 
 	retry.Do(func() error {
-		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection attempt ")
+		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection attempt "+uri.String())
 		db, connErrN := connect(uri.String())
 		if connErrN != nil {
 			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection error "+connErrN.Error())
