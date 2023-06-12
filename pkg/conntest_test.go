@@ -20,9 +20,61 @@ import (
 	"testing"
 )
 
-func TestQueryFor(t *testing.T) {
+func TestQueryForDatabricks(t *testing.T) {
+	res := queryFor("databricks")
+	if !strings.Contains(res, "SELECT 1;") {
+		t.Fail()
+	}
+}
+
+func TestQueryForPostgres(t *testing.T) {
 	res := queryFor("postgres")
 	if !strings.Contains(res, "information_schema") {
+		t.Fail()
+	}
+}
+
+func TestQueryForSnowflake(t *testing.T) {
+	res := queryFor("snowflake")
+	if !strings.Contains(res, "information_schema") {
+		t.Fail()
+	}
+}
+
+func TestDBSnowflakeValid(t *testing.T) {
+	_, err := DB("snowflake://lorem:ipsum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+	if err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+}
+
+func TestDBSnowflakeInvalidEscapeChar(t *testing.T) {
+	// The entity is encoded in the conntest handler
+	_, err := DB("snowflake://lorem:ip%25sum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+
+	// // Password needs sanitising here
+	// pass, _ := dsn.User.Password()
+	// t.Log("DSN=" + dsn.String())
+	// t.Log("PASSWORD=" + pass)
+
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestDBSnowflakeInvalidAmpersand(t *testing.T) {
+	// The entity is encoded in the conntest handler
+	_, err := DB("snowflake://lorem:i%40psum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH")
+
+	// // Password needs sanitising here
+	// pass, _ := dsn.User.Password()
+	// t.Log("DSN=" + dsn.String())
+	// t.Log("PASSWORD=" + pass)
+
+	// "Can't parse DSN URI"
+	if err != nil {
+		t.Log(err)
 		t.Fail()
 	}
 }

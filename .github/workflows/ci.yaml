@@ -15,8 +15,10 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/install-nix-action@v17
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v20
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
+      - uses: cachix/cachix-action@v12
         with:
           name: cachix-action
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
