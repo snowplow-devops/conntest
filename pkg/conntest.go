@@ -35,18 +35,21 @@ func DB(rawUri string) (*dburl.URL, error) {
 	print("\n")
 	dsn, err := dburl.Parse(rawUri)
 
-	l, _ := url.Parse(rawUri)
-
-	// username
-	fmt.Println("user:", l.User.Username())
+	stringUrl, _ := url.Parse(rawUri)
 
 	//password
-	p, _ := l.User.Password()
-	fmt.Println("pass:", p)
+	originalValue, _ := stringUrl.User.Password()
+	fmt.Println("pass:", originalValue)
+	escapedValue := url.QueryEscape(originalValue)
+	fmt.Println("pass:", escapedValue)
+
+	// dsn = strings.Replace(stringUrl.String(), originalValue, escapedValue, 1)
+
+	// q, _ := stringUrl.User.Password()
+	// fmt.Println("pass:", q)
 
 	if err == nil {
 		print(dsn)
-
 		return dsn, nil
 	} else {
 		return nil, errors.New("Can't parse DSN URI")
