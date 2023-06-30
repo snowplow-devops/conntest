@@ -15,62 +15,81 @@ package pkg
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
 	retry "github.com/avast/retry-go/v4"
 	_ "github.com/databricks/databricks-sql-go"
+	pgx "github.com/jackc/pgx/v5"
 	_ "github.com/lib/pq"
-	"github.com/snowflakedb/gosnowflake"
-	"github.com/xo/dburl"
+	sf "github.com/snowflakedb/gosnowflake"
 )
 
-func DB(rawUri string) (*dburl.URL, error) {
-	dsn, err := dburl.Parse(rawUri)
-
-	if err == nil {
-		return dsn, nil
-	} else {
-		return nil, errors.New("Can't parse DSN URI")
-	}
-}
-
-func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
-	var connErr, queryErr error
-	gosnowflake.GetLogger().SetOutput(io.Discard)
-
-	retry.Do(func() error {
-		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection attempt ")
-		db, connErrN := connect(uri.String())
-		if connErrN != nil {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection error "+connErrN.Error())
-		} else {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection acquired")
+func Check(driver string, dsn string, tags map[string]string, retryTimes uint) Event {
+	err := retry.Do(func() error {
+		switch driver {
+		case "snowflake":
+			return checkSnowflake(dsn)
+		case "databricks":
+			return checkConnection("databricks", dsn)
+		case "postgres":
+			return checkPostgres(dsn)
+		default:
+			return fmt.Errorf("unknown driver: %v", driver)
 		}
-
-		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query attempt")
-		_, queryErrN := query(db, uri.Driver)
-		if queryErrN != nil {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query error "+queryErrN.Error())
-		} else {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query actioned")
-		}
-
-		if connErr != nil {
-			db.Close()
-		}
-
-		connErr = connErrN
-		queryErr = queryErrN
-		return queryErr
-	}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) {
-		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Retrying because of "+err.Error())
+	}, retry.Attempts(retryTimes), retry.LastErrorOnly(true), retry.OnRetry(func(u uint, err error) {
+		fmt.Fprintf(os.Stderr, "%s %d attempt: %s\n", time.Now().Format("03:04:05.000000"), u, err.Error())
 	}))
 
-	return NewEvent(NewResult(uri.Host, connErr, queryErr, tags, retryTimes))
+	if err != nil {
+		return NewEvent(NewResult(err, tags, retryTimes))
+	}
+
+	return NewEvent(NewResult(nil, tags, retryTimes))
+}
+
+func checkConnection(driver, dsn string) error {
+	db, err := sql.Open(driver, dsn)
+
+	if err != nil {
+		return fmt.Errorf("can't open a connection to %s: %w", driver, err)
+	}
+
+	defer db.Close()
+
+	if _, err := query(db, driver); err != nil {
+		return fmt.Errorf("can't query %s: %w", driver, err)
+	}
+
+	return nil
+
+}
+
+func checkSnowflake(dsn string) error {
+	var err error
+	cfg, err := sf.ParseDSN(dsn)
+
+	if err != nil {
+		return fmt.Errorf("can't parse Snowflake DSN: %w", err)
+	}
+
+	validatedDsn, err := sf.DSN(cfg)
+	if err != nil {
+		return fmt.Errorf("can't construct Snowflake DSN: %w", err)
+	}
+
+	return checkConnection("snowflake", validatedDsn)
+}
+
+func checkPostgres(dsn string) error {
+	cnf, err := pgx.ParseConfig(dsn)
+
+	if err != nil {
+		return fmt.Errorf("can't parse Postgres DSN: %w", err)
+	}
+
+	return checkConnection("postgres", cnf.ConnString())
 }
 
 func queryFor(driver string) string {
@@ -83,16 +102,9 @@ func queryFor(driver string) string {
 	return dbs[driver]
 }
 
-func connect(uri string) (*sql.DB, error) {
-	db, err := dburl.Open(uri)
-
-	return db, err
-}
-
 func query(db *sql.DB, driver string) (string, error) {
 	var name string
 	var queryString = queryFor(driver)
 	err := db.QueryRow(queryString).Scan(&name)
-
 	return name, err
 }

@@ -28,7 +28,7 @@ func TestQueryFor(t *testing.T) {
 }
 
 func TestMarshall(t *testing.T) {
-	event := NewEvent(NewResult("lorem", nil, nil, map[string]string{"lorem": "ipsum"}, 1))
+	event := NewEvent(NewResult(nil, map[string]string{"lorem": "ipsum"}, 1))
 	var unmarshaled Event
 	marshaled, err := json.Marshal(event)
 	res := json.Unmarshal(marshaled, &unmarshaled)
@@ -41,4 +41,45 @@ func TestMarshall(t *testing.T) {
 		t.Log(unmarshaled, res)
 		t.Fail()
 	}
+}
+
+func TestCheckPostgres(t *testing.T) {
+	result := Check("postgres", "pq://user:pass@localhost:5432/db", map[string]string{}, 1)
+
+	if !containsError(result.Data.Messages, "can't parse Postgres DSN: cannot parse `pq://user:xxxxxx@localhost:5432/db`: failed to parse as DSN (invalid dsn)") {
+		t.Fail()
+	}
+}
+
+func TestCheckSnowflake(t *testing.T) {
+	result := Check("snowflake", "incorrect@urb12345.us-east-1.snowflakecomputing.com/db", map[string]string{}, 1)
+
+	if !containsError(result.Data.Messages, "can't parse Snowflake DSN: 260002: password is empty") {
+		t.Fail()
+	}
+}
+
+func TestCheckDatabricks(t *testing.T) {
+	result := Check("databricks", "db://token:dapi12345@dbc-12345.cloud.databricks.com:443/sql/path", map[string]string{}, 1)
+
+	if !containsError(result.Data.Messages, "can't open a connection to databricks: scheme db not recognized") {
+		t.Fail()
+	}
+}
+
+func TestCheckUnknownDriver(t *testing.T) {
+	result := Check("unknown", "db://user:pass@localhost:123/db", map[string]string{}, 1)
+
+	if !containsError(result.Data.Messages, "unknown driver") {
+		t.Fail()
+	}
+}
+
+func containsError(s []string, errorMessage string) bool {
+	for _, v := range s {
+		if strings.Contains(v, errorMessage) {
+			return true
+		}
+	}
+	return false
 }

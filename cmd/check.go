@@ -16,7 +16,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/snowplow/conntest/pkg"
@@ -26,23 +25,15 @@ import (
 var dsn string
 var tags tagsVar
 var retryTimes uint
+var driver string
 var checkCmd = &cobra.Command{
 	Use:   "check",
-	Short: "A brief description of your command",
-	Long: `Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Run a connection test",
+	Long:  "Run a connection test",
 	Run: func(cmd *cobra.Command, args []string) {
-		pkg.RegisterDatabricks()
-		dsn, err := pkg.DB(dsn)
-		if err == nil {
-			event := pkg.Check(*dsn, tags, retryTimes)
-			res, _ := json.Marshal(event)
-			fmt.Println(string(res))
-		} else {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		event := pkg.Check(driver, dsn, tags, retryTimes)
+		res, _ := json.Marshal(event)
+		fmt.Println(string(res))
 	},
 }
 
@@ -78,4 +69,5 @@ func init() {
 	checkCmd.Flags().StringVarP(&dsn, "dsn", "d", "", "database DSN")
 	checkCmd.Flags().UintVarP(&retryTimes, "retry-times", "r", 1, "number of times to retry using exponential time")
 	checkCmd.PersistentFlags().VarP(&tags, "tags", "", "optional tags")
+	checkCmd.Flags().StringVar(&driver, "driver", "", "driver name")
 }

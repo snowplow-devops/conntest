@@ -23,7 +23,7 @@ var rootCmd = &cobra.Command{
 	Use:   "conntest",
 	Short: "Connection testing for Snowplow destinations",
 	Long: `Conntest is a simple utility that checks connections
-         to Snowplow-supported destionations.`,
+         to Snowplow-supported destinations.`,
 }
 
 func Execute() {
