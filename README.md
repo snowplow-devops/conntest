@@ -10,14 +10,48 @@ Conntest is a command-line utility for validating connections to Snowplow-suppor
 
 To check your database connection, run:
 ```shell
-conntest check --dsn your://database/uri --retry-times 0 --tags 'aTag=value;anotherTag=value'
+conntest check --driver snowflake --dsn your://database/uri --retry-times 0 --tags 'aTag=value;anotherTag=value'
 ```
 ### Example
 
 ```shell
-$ conntest check --tags aTag=value --dsn snowflake://lorem:ipsum@abcdefg-ab01234.snowflakecomputing.com/lorem?account=ab01234&ocspFailOpen=true&protocol=https&region=eu-central-1&role=SNOWPLOW_LOADER_ROLE&schema=SNOWPLOW&validateDefaultParameters=true&warehouse=COMPUTE_WH
+$ conntest check --driver snowflake --dsn username:password@abcdefg-ab01234.snowflakecomputing.com/snowplow --tags=aTag=value
 
-{"id":"b732dd11-428d-4063-aa35-118e0e8ab51f","name":"fabric:warehouse-connection-check","version":1,"emittedBy":"conntest","timestamp":"2022-10-10T08:36:27.832840488Z","data":{"host":"abcdefg-ab01234.snowflakecomputing.com","complete":false,"messages":["HTTP Response code: 500"],"tags":{"aTag":"value"},"attempts":1}}
+# Successful response
+{
+  "id": "6504878f-e1e5-4108-b902-c125d5a75ee4",
+  "name": "fabric:warehouse-connection-check",
+  "version": 1,
+  "emittedBy": "conntest",
+  "timestamp": "2023-07-10T17:00:34.793223+02:00",
+  "data": {
+    "complete": true,
+    "messages": [],
+    "tags": {
+      "aTag": "value"
+    },
+    "attempts": 1
+  }
+}
+
+# Failure
+{
+  "id": "7025ed2b-b0e9-434c-81ea-4a9633d681bd",
+  "name": "fabric:warehouse-connection-check",
+  "version": 1,
+  "emittedBy": "conntest",
+  "timestamp": "2023-07-10T17:01:08.855494+02:00",
+  "data": {
+    "complete": false,
+    "messages": [
+      "All attempts fail:\n#1: can't query snowflake: 390100 (08004): Incorrect username or password was specified."
+    ],
+    "tags": {
+      "aTag": "value"
+    },
+    "attempts": 1
+  }
+}
 ```
 
 

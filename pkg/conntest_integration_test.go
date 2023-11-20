@@ -35,14 +35,9 @@ func TestCheck(t *testing.T) {
 	}
 	defer dbC.Terminate(ctx)
 
-	dsn, err := DB(dsnStr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	tags := map[string]string{}
-	actual := Check(*dsn, tags, 1)
-	expected := Result{dsn.Host, true, []string{}, tags, 1}
+	actual := Check("postgres", dsnStr, tags, 1)
+	expected := Result{true, []string{}, tags, 1}
 
 	if !reflect.DeepEqual(actual.Data, expected) {
 		t.Fail()

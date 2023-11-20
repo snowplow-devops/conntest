@@ -37,23 +37,18 @@ func NewEvent(result Result) Event {
 }
 
 type Result struct {
-	Host     string            `json:"host"`
 	Complete bool              `json:"complete"`
 	Messages []string          `json:"messages"`
 	Tags     map[string]string `json:"tags"`
 	Attempts uint              `json:"attempts"`
 }
 
-func NewResult(host string, connError error, queryError error, tags map[string]string, attempts uint) Result {
+func NewResult(connError error, tags map[string]string, attempts uint) Result {
 	messages := []string{}
 
 	if connError != nil {
 		messages = append(messages, connError.Error())
 	}
 
-	if queryError != nil {
-		messages = append(messages, queryError.Error())
-	}
-
-	return Result{host, connError == nil && queryError == nil, messages, tags, attempts}
+	return Result{len(messages) == 0, messages, tags, attempts}
 }
