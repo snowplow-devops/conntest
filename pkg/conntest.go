@@ -26,6 +26,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/snowflakedb/gosnowflake"
 	"github.com/xo/dburl"
+	_ "gorm.io/driver/bigquery/driver"
 )
 
 func DB(rawUri string) (*dburl.URL, error) {
@@ -75,6 +76,7 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 
 func queryFor(driver string) string {
 	dbs := map[string]string{
+		"bigquery":   `SELECT 1;`,
 		"databricks": `SELECT 1;`,
 		"postgres":   `SELECT * FROM information_schema.information_schema_catalog_name;`,
 		"snowflake":  `SELECT * FROM information_schema.information_schema_catalog_name;`,
