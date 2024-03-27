@@ -1,2 +1,5 @@
 conntest
 conntest.gz
+
+.DS_Store
+.direnv
