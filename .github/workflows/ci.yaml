@@ -8,15 +8,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
            ref: ${{ github.event.pull_request.head.ref }}
-      - uses: TimonVS/pr-labeler-action@v3.1.0
+      - uses: TimonVS/pr-labeler-action@v5.0.0
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/install-nix-action@v17
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v20
+      - uses: cachix/cachix-action@v13
         with:
           name: cachix-action
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
@@ -29,6 +29,6 @@ jobs:
       - name: Build
         run: nix develop -c go build
       - name: Push changes
-        uses: stefanzweifel/git-auto-commit-action@v4.14.1
+        uses: stefanzweifel/git-auto-commit-action@v5.0.0
         with:
           commit_message: Run formatter/linter
