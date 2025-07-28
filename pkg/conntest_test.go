@@ -42,3 +42,59 @@ func TestMarshall(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestDB_DatabricksOAuth(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawURI  string
+		wantErr bool
+		check   func(*testing.T, string, error)
+	}{
+		{
+			name:   "valid OAuth M2M DSN",
+			rawURI: "databricks://client123:secret456@dbc-abc123.cloud.databricks.com/sql/1.0/endpoints/xyz789",
+			check: func(t *testing.T, uri string, err error) {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+				}
+				dsn, parseErr := DB(uri)
+				if parseErr != nil {
+					t.Errorf("Expected successful parsing, got %v", parseErr)
+				}
+				if dsn.Scheme != "databricks" {
+					t.Errorf("Expected scheme 'databricks', got '%s'", dsn.Scheme)
+				}
+				if dsn.User.Username() != "client123" {
+					t.Errorf("Expected client ID 'client123', got '%s'", dsn.User.Username())
+				}
+				if secret, _ := dsn.User.Password(); secret != "secret456" {
+					t.Errorf("Expected client secret 'secret456', got '%s'", secret)
+				}
+			},
+		},
+		{
+			name:   "regular databricks DSN should still work",
+			rawURI: "databricks://token:abc123@dbc-abc123.cloud.databricks.com/sql/1.0/endpoints/xyz789",
+			check: func(t *testing.T, uri string, err error) {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+				}
+				dsn, parseErr := DB(uri)
+				if parseErr != nil {
+					t.Errorf("Expected successful parsing, got %v", parseErr)
+				}
+				if dsn.Scheme != "databricks" {
+					t.Errorf("Expected scheme 'databricks', got '%s'", dsn.Scheme)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.check != nil {
+				tt.check(t, tt.rawURI, nil)
+			}
+		})
+	}
+}

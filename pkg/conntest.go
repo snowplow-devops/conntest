@@ -18,13 +18,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	retry "github.com/avast/retry-go/v4"
-	//nolint:gosec // This is a valid import for Databricks
-	_ "github.com/databricks/databricks-sql-go"
+	dbsql "github.com/databricks/databricks-sql-go"
+	m2m "github.com/databricks/databricks-sql-go/auth/oauth/m2m"
+
 	//nolint:gosec // This is a valid import for Postgres
 	_ "github.com/lib/pq"
 	"github.com/snowflakedb/gosnowflake"
@@ -111,9 +114,48 @@ func queryFor(driver string) string {
 }
 
 func connect(uri dburl.URL) (*sql.DB, error) {
-	if strings.HasPrefix(uri.Scheme, "databricks") {
-		return sql.Open("databricks", fmt.Sprintf("%s@%s%s?%s", uri.User, uri.Host, uri.Path, uri.RawQuery))
+	if uri.Scheme == "databricks" {
+		host, portString, err := net.SplitHostPort(uri.Host)
+		if err != nil {
+			host = uri.Host
+			portString = "443"
+		}
+		port, err := strconv.Atoi(portString)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert port to integer: %w", err)
+		}
+
+		// If the connection is using PAT authentication
+		if uri.User.Username() == "token" {
+			token, hasToken := uri.User.Password()
+			if !hasToken || token == "" {
+				return nil, errors.New("databricks PAT authentication requires a token in DSN")
+			}
+			return sql.Open("databricks", fmt.Sprintf("token:%s@%s:%d%s", token, host, port, uri.Path))
+		}
+
+		// If the connection is using OAuth M2M authentication
+		clientSecret, hasClientSecret := uri.User.Password()
+		if !hasClientSecret || clientSecret == "" {
+			return nil, errors.New("databricks OAuth M2M authentication requires a client secret in DSN")
+		}
+		authenticator := m2m.NewAuthenticator(
+			uri.User.Username(),
+			clientSecret,
+			host,
+		)
+		connector, err := dbsql.NewConnector(
+			dbsql.WithServerHostname(host),
+			dbsql.WithHTTPPath(uri.Path),
+			dbsql.WithPort(port),
+			dbsql.WithAuthenticator(authenticator),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create OAuth M2M connector: %w", err)
+		}
+		return sql.OpenDB(connector), nil
 	}
+
 	return dburl.Open(uri.String())
 }
 

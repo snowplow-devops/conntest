@@ -74,6 +74,12 @@ make clean
 # Examples:
 ./conntest check --dsn "snowflake://user:pass@host.snowflakecomputing.com/db" --tags 'env=test'
 ./conntest check --dsn "bigquery://:@project-id/dataset" --retry-times 0 --tags 'env=prod'
+
+# Databricks with PAT (Personal Access Token)
+./conntest check --dsn "databricks://token:your_pat_token@workspace.cloud.databricks.com/sql/1.0/endpoints/endpoint_id" --tags 'env=test'
+
+# Databricks with OAuth M2M (Machine-to-Machine) using client credentials
+./conntest check --dsn "databricks://client_id:client_secret@workspace.cloud.databricks.com/sql/1.0/endpoints/endpoint_id" --tags 'env=prod'
 ```
 
 ## Architecture
@@ -103,6 +109,8 @@ make clean
 - BigQuery: Uses GORM with bigquery driver, connection-only testing
 - PostgreSQL: Uses lib/pq driver v1.10.9+ with information_schema queries  
 - Databricks: Uses databricks-sql-go driver v1.8.0+ with simple SELECT queries
+  - PAT Authentication: `databricks://token:pat_token@host/path`
+  - OAuth M2M Authentication: `databricks-oauth://client_id:client_secret@host/path`
 
 ### Testing
 - Unit tests: `*_test.go` files with `-test.short` flag
