@@ -66,7 +66,7 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 		// Do some non-Bigquery checks
 		retry.Do(func() error {
 			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection attempt ")
-			db, connErrN := connect(uri.String())
+			db, connErrN := connect(uri)
 			if connErrN != nil {
 				fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection error "+connErrN.Error())
 			} else {
@@ -110,10 +110,11 @@ func queryFor(driver string) string {
 	return dbs[driver]
 }
 
-func connect(uri string) (*sql.DB, error) {
-	db, err := dburl.Open(uri)
-
-	return db, err
+func connect(uri dburl.URL) (*sql.DB, error) {
+	if strings.HasPrefix(uri.Scheme, "databricks") {
+		return sql.Open("databricks", fmt.Sprintf("%s@%s%s?%s", uri.User, uri.Host, uri.Path, uri.RawQuery))
+	}
+	return dburl.Open(uri.String())
 }
 
 func query(db *sql.DB, driver string) (string, error) {
