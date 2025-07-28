@@ -7,27 +7,24 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v20
-      - uses: cachix/cachix-action@v13
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          name: cachix-action
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - name: Tests
-        run: nix develop -c go test -v ./... -test.short
-      - name: Formatter
-        run: nix develop -c go fmt ./...
-      - name: Linter
-        run: nix develop -c golangci-lint run || true
+          fetch-depth: 0
+          fetch-tags: true
+
       - name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.18
+          go-version: '1.24'
           check-latest: true
-      - name: Build
-        run: go build
-      - name: Compress
-        run: nix develop -c tar czvf conntest.tar.gz conntest
+
+      - name: Run integration tests
+        run: make integration-test
+
+      - name: Build all targets
+        run: make all
+
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -37,9 +34,10 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: ${{ contains(github.ref , '-') }}
+
       - name: Upload release binaries
-        uses: alexellis/upload-assets@0.2.3
+        uses: alexellis/upload-assets@0.4.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          asset_paths: '["./conntest.tar.gz"]'
+          asset_paths: '["./build/compiled/*"]'
