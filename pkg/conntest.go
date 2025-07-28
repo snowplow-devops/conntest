@@ -74,19 +74,23 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 			}
 
 			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query attempt")
-			_, queryErrN := query(db, uri.Driver)
-			if queryErrN != nil {
-				fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query error "+queryErrN.Error())
+			if db != nil {
+				_, queryErrN := query(db, uri.Driver)
+				if queryErrN != nil {
+					fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query error "+queryErrN.Error())
+				} else {
+					fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query actioned")
+				}
+				queryErr = queryErrN
 			} else {
-				fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query actioned")
+				queryErr = connErrN
 			}
 
-			if connErr != nil {
+			if connErr != nil && db != nil {
 				db.Close()
 			}
 
 			connErr = connErrN
-			queryErr = queryErrN
 			return queryErr
 		}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) {
 			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Retrying because of "+err.Error())
