@@ -19,6 +19,7 @@ import (
 	uuid "github.com/google/uuid"
 )
 
+// Event represents a connection test result.
 type Event struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
@@ -28,6 +29,7 @@ type Event struct {
 	Data      Result    `json:"data"`
 }
 
+// NewEvent creates a new Event.
 func NewEvent(result Result) Event {
 	name := "fabric:warehouse-connection-check"
 	emittedBy := "conntest"
@@ -36,6 +38,7 @@ func NewEvent(result Result) Event {
 	return Event{uuid.New(), name, version, emittedBy, time.Now(), result}
 }
 
+// Result represents a connection test result.
 type Result struct {
 	Host     string            `json:"host"`
 	Complete bool              `json:"complete"`
@@ -44,6 +47,7 @@ type Result struct {
 	Attempts uint              `json:"attempts"`
 }
 
+// NewResult processes a connection test result.
 func NewResult(host string, connError error, queryError error, tags map[string]string, attempts uint) Result {
 	messages := []string{}
 

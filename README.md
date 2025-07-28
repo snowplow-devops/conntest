@@ -50,45 +50,79 @@ conntest check --dsn bigquery://:@engineering-sandbox/testantonis_invalid --retr
 
 ## Development
 
-This repo uses nix to provide [reproducible development environment](https://nixos.org/guides/ad-hoc-developer-environments.html). To make use of the provided setup:
+### Prerequisites
 
-1. Install `nix`:
+- Go 1.24+ 
+- Docker (for integration tests)
+- Make
 
-```shell
-sh <(curl -L https://nixos.org/nix/install)
+### Quick Start
+
+Assuming git, Go, and Make are installed:
+
+```bash
+host> git clone https://github.com/snowplow-devops/conntest
+host> cd conntest
+host> make test
+host> make build
 ```
 
-2. Enable experimental flags
+### Available Make Targets
 
-```shell
-mkdir -p ~/.config/nix && echo 'experimental-features = nix-command flakes' > ~/.config/nix/nix.conf
+#### Building
+```bash
+# Build for local development
+make build
+
+# Build all cross-platform binaries
+make all
+
+# Build specific platforms
+make cli-linux-amd64
+make cli-linux-arm64
+make cli-darwin-amd64
+make cli-darwin-arm64
 ```
 
-3. Enter development environment
+#### Testing
+```bash
+# Run unit tests with coverage
+make test
 
-```shell
-nix develop
+# Run integration tests
+make integration-test
 ```
 
-> **Note**
-> If you want the convenience of getting the development environment upon `cd` into directory use [direnv](https://direnv.net)
+#### Code Quality
+```bash
+# Format code
+make format
 
-4. Develop
+# Lint code
+make lint
 
-```shell
-# format
-go fmt ./...
-# build
-go build
-# test
-go test -v ./... -test.short
-# test with integration tests
-go test -v ./...
+# Tidy Go modules
+make tidy
+
+# Update dependencies
+make update
 ```
+
+#### Cleanup
+```bash
+# Remove build artifacts
+make clean
+```
+
+All compiled assets are available under `build/compiled`.
+
+**Note:** Always run `make format` before submitting any code.
+
+**Note:** The `make test` command generates a code coverage file which can be found at `build/coverage/coverage.html`.
 
 ### Copyright and license
 
-Conntest is copyright 2022-2024 Snowplow Analytics Ltd.
+Conntest is copyright 2022-2025 Snowplow Analytics Ltd.
 
 Licensed under the **[Apache License, Version 2.0][license]** (the "License");
 you may not use this software except in compliance with the License.

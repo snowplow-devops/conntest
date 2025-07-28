@@ -23,25 +23,30 @@ import (
 	"time"
 
 	retry "github.com/avast/retry-go/v4"
+	//nolint:gosec // This is a valid import for Databricks
 	_ "github.com/databricks/databricks-sql-go"
+	//nolint:gosec // This is a valid import for Postgres
 	_ "github.com/lib/pq"
 	"github.com/snowflakedb/gosnowflake"
 	"github.com/xo/dburl"
 	"gorm.io/driver/bigquery"
+
+	//nolint:gosec // This is a valid import for BigQuery
 	_ "gorm.io/driver/bigquery/driver"
 	"gorm.io/gorm"
 )
 
-func DB(rawUri string) (*dburl.URL, error) {
-	dsn, err := dburl.Parse(rawUri)
+// DB parses a raw URI and returns a dburl.URL.
+func DB(rawURI string) (*dburl.URL, error) {
+	dsn, err := dburl.Parse(rawURI)
 
 	if err == nil {
 		return dsn, nil
-	} else {
-		return nil, errors.New("Can't parse DSN URI")
 	}
+	return nil, errors.New("failed to parse DSN URI")
 }
 
+// Check tests a connection to a database and returns an Event.
 func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 	var connErr, queryErr error
 	gosnowflake.GetLogger().SetOutput(io.Discard)
@@ -69,19 +74,23 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 			}
 
 			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query attempt")
-			_, queryErrN := query(db, uri.Driver)
-			if queryErrN != nil {
-				fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query error "+queryErrN.Error())
+			if db != nil {
+				_, queryErrN := query(db, uri.Driver)
+				if queryErrN != nil {
+					fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query error "+queryErrN.Error())
+				} else {
+					fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query actioned")
+				}
+				queryErr = queryErrN
 			} else {
-				fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query actioned")
+				queryErr = connErrN
 			}
 
-			if connErr != nil {
+			if connErr == nil && db != nil {
 				db.Close()
 			}
 
 			connErr = connErrN
-			queryErr = queryErrN
 			return queryErr
 		}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) {
 			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Retrying because of "+err.Error())

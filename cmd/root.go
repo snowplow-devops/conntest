@@ -14,6 +14,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -23,10 +24,21 @@ var rootCmd = &cobra.Command{
 	Use:   "conntest",
 	Short: "Connection testing for Snowplow destinations",
 	Long: `Conntest is a simple utility that checks connections
-         to Snowplow-supported destionations.`,
+		 to Snowplow-supported destionations.`,
 }
 
-func Execute() {
+// Execute is the main entry point for the CLI.
+func Execute(version string) {
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
+	}
+
+	rootCmd.AddCommand(versionCmd)
+
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

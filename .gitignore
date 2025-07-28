@@ -3,3 +3,4 @@ conntest.gz
 
 .DS_Store
 .direnv
+build/
