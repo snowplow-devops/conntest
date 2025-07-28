@@ -17,7 +17,14 @@ import "github.com/xo/dburl"
 
 // Functions added below to support Databricks which is not currently supported in xo/dburl
 // and xo/usql - the Databricks driver is still in beta
+
+// RegisterDatabricks registers the Databricks driver.
 func RegisterDatabricks() {
+	// Check if the scheme is already registered to avoid panic on duplicate registration
+	driver, _ := dburl.SchemeDriverAndAliases("databricks")
+	if driver != "" {
+		return
+	}
 	dburl.Register(dburl.Scheme{"databricks", GenDatabricks, 0, false, []string{"databricks"}, ""})
 }
 
@@ -25,10 +32,10 @@ func RegisterDatabricks() {
 // Format is here https://github.com/databricks/databricks-sql-go#usage
 //
 // databricks://:[your token]@[Workspace hostname][Endpoint HTTP Path]
-func GenDatabricks(u *dburl.URL) (string, error) {
+func GenDatabricks(u *dburl.URL) (string, string, error) {
 	host := u.Hostname()
 	if host == "" {
-		return "", dburl.ErrMissingHost
+		return "", "", dburl.ErrMissingHost
 	}
 
 	// add auth token, which is passed as the password
@@ -37,13 +44,16 @@ func GenDatabricks(u *dburl.URL) (string, error) {
 		user += ":" + pass
 	}
 
-	return "databricks://" + user + "@" + host + u.Path, nil
+	dsn := "databricks://" + user + "@" + host + u.Path
+	return dsn, "databricks", nil
 }
 
+// GetProtocols returns the protocols for a given name.
 func GetProtocols(name string) []string {
 	return dburl.Protocols(name)
 }
 
+// SchemeDriverAndAliases returns the scheme, driver, and aliases for a given name.
 func SchemeDriverAndAliases(name string) (string, []string) {
 	return dburl.SchemeDriverAndAliases(name)
 }
