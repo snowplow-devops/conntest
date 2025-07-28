@@ -111,8 +111,6 @@ func queryFor(driver string) string {
 }
 
 func connect(uri dburl.URL) (*sql.DB, error) {
-	fmt.Printf("Connecting to: %+v\n", uri)
-
 	if strings.HasPrefix(uri.Scheme, "databricks") {
 		return sql.Open("databricks", fmt.Sprintf("%s@%s%s?%s", uri.User, uri.Host, uri.Path, uri.RawQuery))
 	}
