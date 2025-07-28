@@ -15,6 +15,8 @@ package main
 
 import "github.com/snowplow/conntest/cmd"
 
+var version = "dev"
+
 func main() {
-	cmd.Execute()
+	cmd.Execute(version)
 }

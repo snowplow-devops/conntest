@@ -32,16 +32,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func DB(rawUri string) (*dburl.URL, error) {
-	dsn, err := dburl.Parse(rawUri)
+// DB parses a raw URI and returns a dburl.URL.
+func DB(rawURI string) (*dburl.URL, error) {
+	dsn, err := dburl.Parse(rawURI)
 
 	if err == nil {
 		return dsn, nil
-	} else {
-		return nil, errors.New("Can't parse DSN URI")
 	}
+	return nil, errors.New("failed to parse DSN URI")
 }
 
+// Check tests a connection to a database and returns an Event.
 func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 	var connErr, queryErr error
 	gosnowflake.GetLogger().SetOutput(io.Discard)
