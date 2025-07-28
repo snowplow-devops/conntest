@@ -14,6 +14,8 @@
 package cmd
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -22,7 +24,29 @@ func TestTagsVar(t *testing.T) {
 	tags := tagsVar{}
 	tags.Set(str)
 
-	if tags.String() != str {
+	result := tags.String()
+
+	// Parse the input string to get expected key-value pairs
+	expectedPairs := make(map[string]string)
+	for _, pair := range strings.Split(str, ";") {
+		parts := strings.Split(pair, "=")
+		if len(parts) == 2 {
+			expectedPairs[parts[0]] = parts[1]
+		}
+	}
+
+	// Parse the output string to get actual key-value pairs
+	actualPairs := make(map[string]string)
+	for _, pair := range strings.Split(result, ";") {
+		parts := strings.Split(pair, "=")
+		if len(parts) == 2 {
+			actualPairs[parts[0]] = parts[1]
+		}
+	}
+
+	// Compare the maps
+	if !reflect.DeepEqual(expectedPairs, actualPairs) {
+		t.Errorf("Expected pairs: %v, Got pairs: %v", expectedPairs, actualPairs)
 		t.Fail()
 	}
 }
