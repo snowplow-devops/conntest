@@ -23,11 +23,15 @@ import (
 	"time"
 
 	retry "github.com/avast/retry-go/v4"
+	//nolint:gosec // This is a valid import for Databricks
 	_ "github.com/databricks/databricks-sql-go"
+	//nolint:gosec // This is a valid import for Postgres
 	_ "github.com/lib/pq"
 	"github.com/snowflakedb/gosnowflake"
 	"github.com/xo/dburl"
 	"gorm.io/driver/bigquery"
+
+	//nolint:gosec // This is a valid import for BigQuery
 	_ "gorm.io/driver/bigquery/driver"
 	"gorm.io/gorm"
 )
