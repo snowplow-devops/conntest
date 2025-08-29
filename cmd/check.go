@@ -21,9 +21,10 @@ import (
 
 	"github.com/snowplow/conntest/pkg"
 	"github.com/spf13/cobra"
+	"github.com/xo/dburl"
 )
 
-var dsn string
+var dsns []string
 var tags tagsVar
 var retryTimes uint
 var checkCmd = &cobra.Command{
@@ -33,14 +34,36 @@ var checkCmd = &cobra.Command{
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		dsn, err := pkg.DB(dsn)
-		if err == nil {
-			event := pkg.Check(*dsn, tags, retryTimes)
+		if len(dsns) == 0 {
+			fmt.Println("Error: at least one --dsn required")
+			os.Exit(1)
+		}
+		
+		if len(dsns) == 1 {
+			// Single DSN - version 1 (backwards compatible)
+			dsn, err := pkg.DB(dsns[0])
+			if err == nil {
+				event := pkg.Check(*dsn, tags, retryTimes)
+				res, _ := json.Marshal(event)
+				fmt.Println(string(res))
+			} else {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		} else {
+			// Multiple DSNs - version 2 with array and summary
+			var uris []dburl.URL
+			for _, d := range dsns {
+				dsn, err := pkg.DB(d)
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				uris = append(uris, *dsn)
+			}
+			event := pkg.CheckMultiple(uris, tags, retryTimes)
 			res, _ := json.Marshal(event)
 			fmt.Println(string(res))
-		} else {
-			fmt.Println(err)
-			os.Exit(1)
 		}
 	},
 }
@@ -74,7 +97,7 @@ func (t *tagsVar) Type() string {
 
 func init() {
 	rootCmd.AddCommand(checkCmd)
-	checkCmd.Flags().StringVarP(&dsn, "dsn", "d", "", "database DSN")
+	checkCmd.Flags().StringSliceVarP(&dsns, "dsn", "d", []string{}, "database DSN(s)")
 	checkCmd.Flags().UintVarP(&retryTimes, "retry-times", "r", 1, "number of times to retry using exponential time")
 	checkCmd.PersistentFlags().VarP(&tags, "tags", "", "optional tags")
 }

@@ -51,6 +51,22 @@ func DB(rawURI string) (*dburl.URL, error) {
 
 // Check tests a connection to a database and returns an Event.
 func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
+	result := checkSingle(uri, tags, retryTimes)
+	return NewEvent(result)
+}
+
+// CheckMultiple tests connections to multiple databases and returns an Event with multiple results.
+func CheckMultiple(uris []dburl.URL, tags map[string]string, retryTimes uint) Event {
+	results := make([]Result, 0, len(uris))
+	for _, uri := range uris {
+		result := checkSingle(uri, tags, retryTimes)
+		results = append(results, result)
+	}
+	return NewEventMultiple(results)
+}
+
+// checkSingle tests a connection to a single database and returns a Result.
+func checkSingle(uri dburl.URL, tags map[string]string, retryTimes uint) Result {
 	var connErr, queryErr error
 	gosnowflake.GetLogger().SetOutput(io.Discard)
 
@@ -100,7 +116,7 @@ func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
 		}))
 	}
 
-	return NewEvent(NewResult(uri.Host, connErr, queryErr, tags, retryTimes))
+	return NewResult(uri.Host, connErr, queryErr, tags, retryTimes)
 }
 
 func queryFor(driver string) string {

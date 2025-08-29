@@ -14,9 +14,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
+	
+	"github.com/snowplow/conntest/pkg"
+	"github.com/xo/dburl"
 )
 
 func TestTagsVar(t *testing.T) {
@@ -48,5 +52,128 @@ func TestTagsVar(t *testing.T) {
 	if !reflect.DeepEqual(expectedPairs, actualPairs) {
 		t.Errorf("Expected pairs: %v, Got pairs: %v", expectedPairs, actualPairs)
 		t.Fail()
+	}
+}
+
+func TestMultipleDSNVersioning(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	tests := []struct {
+		name        string
+		dsns        []string
+		wantVersion int
+	}{
+		{
+			name:        "single DSN should use version 1",
+			dsns:        []string{"postgres://user:pass@host/db"},
+			wantVersion: 1,
+		},
+		{
+			name:        "multiple DSNs should use version 2",
+			dsns:        []string{"postgres://user:pass@host/db1", "postgres://user:pass@host/db2"},
+			wantVersion: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse DSNs
+			var uris []dburl.URL
+			for _, dsnStr := range tt.dsns {
+				dsn, err := pkg.DB(dsnStr)
+				if err != nil {
+					t.Skip("Skipping test due to DSN parse error:", err)
+				}
+				uris = append(uris, *dsn)
+			}
+
+			tags := map[string]string{"test": "value"}
+			retryTimes := uint(1)
+
+			var event pkg.Event
+			if len(uris) == 1 {
+				event = pkg.Check(uris[0], tags, retryTimes)
+			} else {
+				event = pkg.CheckMultiple(uris, tags, retryTimes)
+			}
+
+			if event.Version != tt.wantVersion {
+				t.Errorf("Expected version %d, got %d", tt.wantVersion, event.Version)
+			}
+
+			// Test JSON marshaling works
+			_, err := json.Marshal(event)
+			if err != nil {
+				t.Errorf("Failed to marshal event: %v", err)
+			}
+		})
+	}
+}
+
+func TestMultipleResultsStructure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Test that multiple DSNs produce the expected structure
+	dsns := []string{
+		"postgres://user:pass@host1/db1",
+		"postgres://user:pass@host2/db2",
+	}
+
+	var uris []dburl.URL
+	for _, dsnStr := range dsns {
+		dsn, err := pkg.DB(dsnStr)
+		if err != nil {
+			t.Skip("Skipping test due to DSN parse error:", err)
+		}
+		uris = append(uris, *dsn)
+	}
+
+	tags := map[string]string{"env": "test"}
+	event := pkg.CheckMultiple(uris, tags, uint(1))
+
+	// Verify event structure
+	if event.Version != 2 {
+		t.Errorf("Expected version 2, got %d", event.Version)
+	}
+
+	// Marshal to JSON and verify structure
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Failed to marshal event: %v", err)
+	}
+
+	// Unmarshal to verify structure
+	var eventMap map[string]interface{}
+	err = json.Unmarshal(jsonData, &eventMap)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal event: %v", err)
+	}
+
+	// Check that data contains results array and summary
+	data, ok := eventMap["data"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Data field should be an object")
+	}
+
+	results, ok := data["results"].([]interface{})
+	if !ok {
+		t.Fatal("Data should contain results array")
+	}
+
+	if len(results) != 2 {
+		t.Errorf("Expected 2 results, got %d", len(results))
+	}
+
+	summary, ok := data["summary"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Data should contain summary object")
+	}
+
+	if summary["total"] != float64(2) {
+		t.Errorf("Expected summary total 2, got %v", summary["total"])
 	}
 }
