@@ -21,12 +21,12 @@ import (
 
 // Event represents a connection test result.
 type Event struct {
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	Version   int       `json:"version"`
-	EmittedBy string    `json:"emittedBy"`
-	Timestamp time.Time `json:"timestamp"`
-	Data      Result    `json:"data"`
+	ID        uuid.UUID   `json:"id"`
+	Name      string      `json:"name"`
+	Version   int         `json:"version"`
+	EmittedBy string      `json:"emittedBy"`
+	Timestamp time.Time   `json:"timestamp"`
+	Data      interface{} `json:"data"`
 }
 
 // NewEvent creates a new Event.
@@ -60,4 +60,42 @@ func NewResult(host string, connError error, queryError error, tags map[string]s
 	}
 
 	return Result{host, connError == nil && queryError == nil, messages, tags, attempts}
+}
+
+// MultiResult represents multiple connection test results with summary.
+type MultiResult struct {
+	Results []Result `json:"results"`
+	Summary Summary  `json:"summary"`
+}
+
+// Summary represents summary statistics for multiple connection tests.
+type Summary struct {
+	Total     int `json:"total"`
+	Succeeded int `json:"succeeded"`
+	Failed    int `json:"failed"`
+}
+
+// NewEventMultiple creates a new Event for multiple results.
+func NewEventMultiple(results []Result) Event {
+	succeeded := 0
+	for _, r := range results {
+		if r.Complete {
+			succeeded++
+		}
+	}
+
+	data := MultiResult{
+		Results: results,
+		Summary: Summary{
+			Total:     len(results),
+			Succeeded: succeeded,
+			Failed:    len(results) - succeeded,
+		},
+	}
+
+	name := "fabric:warehouse-connection-check"
+	emittedBy := "conntest"
+	version := 2
+
+	return Event{uuid.New(), name, version, emittedBy, time.Now(), data}
 }
