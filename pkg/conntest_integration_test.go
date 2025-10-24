@@ -35,16 +35,20 @@ func TestCheck(t *testing.T) {
 	}
 	defer dbC.Terminate(ctx)
 
+	tags := map[string]string{}
+	event, err := CheckDSNs([]string{dsnStr}, tags, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	dsn, err := DB(dsnStr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tags := map[string]string{}
-	actual := Check(*dsn, tags, 1)
 	expected := Result{dsn.Host, true, []string{}, tags, 1}
 
-	if !reflect.DeepEqual(actual.Data, expected) {
+	if !reflect.DeepEqual(event.Data, expected) {
 		t.Fail()
 	}
 }

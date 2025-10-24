@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Conntest is a command-line utility for validating connections to Snowplow-supported destinations including Snowflake, BigQuery, PostgreSQL, and Databricks. The tool outputs structured JSON events containing connection test results.
+Conntest is a command-line utility for validating connections to Snowplow-supported destinations including Snowflake, BigQuery, PostgreSQL, Databricks, and Git repositories. The tool outputs structured JSON events containing connection test results.
 
 **Version Requirements:**
 - Go 1.24+ (updated from 1.18)
@@ -80,6 +80,10 @@ make clean
 
 # Databricks with OAuth M2M (Machine-to-Machine) using client credentials
 ./conntest check --dsn "databricks://client_id:client_secret@workspace.cloud.databricks.com/sql/1.0/endpoints/endpoint_id" --tags 'env=prod'
+
+# Git repository with SSH authentication (requires deploy key)
+./conntest check --dsn "git+ssh://git@github.com/user/repo.git?keyfile=/path/to/deploy_key" --tags 'env=test'
+./conntest check --dsn "git+ssh://git@gitlab.com/group/project.git?keyfile=/home/user/.ssh/gitlab_deploy_key" --retry-times 0 --tags 'env=prod'
 ```
 
 ## Architecture
@@ -92,25 +96,31 @@ make clean
 - `pkg/`: Core business logic
   - `conntest.go`: Connection testing logic with database-specific handling
   - `types.go`: Event and Result type definitions for JSON output
-  - `databricks.go`: Databricks-specific connection handling
+  - `git.go`: Git repository connection testing via SSH
 
 ### Key Patterns
 - Uses Cobra for CLI structure with flags for DSN, retry-times, and tags
 - Database connections handled via `github.com/xo/dburl` for unified DSN parsing (v0.23.8+)
-- Different connection strategies for BigQuery (uses GORM) vs other databases (uses database/sql)
+- Git connections handled via custom DSN parser with `git+ssh://` scheme
+- Different connection strategies for BigQuery (uses GORM) vs other databases (uses database/sql) vs Git (uses go-git)
 - Retry logic implemented with `github.com/avast/retry-go/v4` (v4.6.1+)
 - Structured JSON output using Event/Result types with UUIDs and timestamps
 - All database drivers imported as blank imports for registration
 - Logging to stderr with timestamps, JSON results to stdout
 - Custom Databricks scheme registration with updated API compatibility
+- Git repository testing uses shallow clones (depth=1) with SSH key authentication
 
-### Supported Databases
+### Supported Destinations
 - Snowflake: Uses gosnowflake driver v1.15.0+ with information_schema queries
 - BigQuery: Uses GORM with bigquery driver, connection-only testing
-- PostgreSQL: Uses lib/pq driver v1.10.9+ with information_schema queries  
+- PostgreSQL: Uses lib/pq driver v1.10.9+ with information_schema queries
 - Databricks: Uses databricks-sql-go driver v1.8.0+ with simple SELECT queries
   - PAT Authentication: `databricks://token:pat_token@host/path`
   - OAuth M2M Authentication: `databricks-oauth://client_id:client_secret@host/path`
+- Git Repositories: Uses go-git v5.16.3+ for SSH-based repository access
+  - SSH Authentication: `git+ssh://git@host/path/to/repo.git?keyfile=/path/to/key`
+  - Supports GitHub, GitLab, Bitbucket, and any Git server with SSH access
+  - Performs shallow clone (depth=1) for efficient testing
 
 ### Testing
 - Unit tests: `*_test.go` files with `-test.short` flag

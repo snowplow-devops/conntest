@@ -21,7 +21,6 @@ import (
 
 	"github.com/snowplow/conntest/pkg"
 	"github.com/spf13/cobra"
-	"github.com/xo/dburl"
 )
 
 var dsns []string
@@ -38,33 +37,15 @@ to quickly create a Cobra application.`,
 			fmt.Println("Error: at least one --dsn required")
 			os.Exit(1)
 		}
-		
-		if len(dsns) == 1 {
-			// Single DSN - version 1 (backwards compatible)
-			dsn, err := pkg.DB(dsns[0])
-			if err == nil {
-				event := pkg.Check(*dsn, tags, retryTimes)
-				res, _ := json.Marshal(event)
-				fmt.Println(string(res))
-			} else {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		} else {
-			// Multiple DSNs - version 2 with array and summary
-			var uris []dburl.URL
-			for _, d := range dsns {
-				dsn, err := pkg.DB(d)
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-				uris = append(uris, *dsn)
-			}
-			event := pkg.CheckMultiple(uris, tags, retryTimes)
-			res, _ := json.Marshal(event)
-			fmt.Println(string(res))
+
+		event, err := pkg.CheckDSNs(dsns, tags, retryTimes)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
+
+		res, _ := json.Marshal(event)
+		fmt.Println(string(res))
 	},
 }
 

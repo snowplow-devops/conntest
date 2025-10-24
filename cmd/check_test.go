@@ -18,9 +18,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	
+
 	"github.com/snowplow/conntest/pkg"
-	"github.com/xo/dburl"
 )
 
 func TestTagsVar(t *testing.T) {
@@ -79,24 +78,12 @@ func TestMultipleDSNVersioning(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Parse DSNs
-			var uris []dburl.URL
-			for _, dsnStr := range tt.dsns {
-				dsn, err := pkg.DB(dsnStr)
-				if err != nil {
-					t.Skip("Skipping test due to DSN parse error:", err)
-				}
-				uris = append(uris, *dsn)
-			}
-
 			tags := map[string]string{"test": "value"}
 			retryTimes := uint(1)
 
-			var event pkg.Event
-			if len(uris) == 1 {
-				event = pkg.Check(uris[0], tags, retryTimes)
-			} else {
-				event = pkg.CheckMultiple(uris, tags, retryTimes)
+			event, err := pkg.CheckDSNs(tt.dsns, tags, retryTimes)
+			if err != nil {
+				t.Skip("Skipping test due to DSN error:", err)
 			}
 
 			if event.Version != tt.wantVersion {
@@ -104,7 +91,7 @@ func TestMultipleDSNVersioning(t *testing.T) {
 			}
 
 			// Test JSON marshaling works
-			_, err := json.Marshal(event)
+			_, err = json.Marshal(event)
 			if err != nil {
 				t.Errorf("Failed to marshal event: %v", err)
 			}
@@ -123,17 +110,11 @@ func TestMultipleResultsStructure(t *testing.T) {
 		"postgres://user:pass@host2/db2",
 	}
 
-	var uris []dburl.URL
-	for _, dsnStr := range dsns {
-		dsn, err := pkg.DB(dsnStr)
-		if err != nil {
-			t.Skip("Skipping test due to DSN parse error:", err)
-		}
-		uris = append(uris, *dsn)
-	}
-
 	tags := map[string]string{"env": "test"}
-	event := pkg.CheckMultiple(uris, tags, uint(1))
+	event, err := pkg.CheckDSNs(dsns, tags, uint(1))
+	if err != nil {
+		t.Skip("Skipping test due to DSN error:", err)
+	}
 
 	// Verify event structure
 	if event.Version != 2 {
