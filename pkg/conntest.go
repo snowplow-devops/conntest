@@ -19,10 +19,8 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	retry "github.com/avast/retry-go/v4"
 	dbsql "github.com/databricks/databricks-sql-go"
@@ -49,20 +47,36 @@ func DB(rawURI string) (*dburl.URL, error) {
 	return nil, errors.New("failed to parse DSN URI")
 }
 
-// Check tests a connection to a database and returns an Event.
-func Check(uri dburl.URL, tags map[string]string, retryTimes uint) Event {
-	result := checkSingle(uri, tags, retryTimes)
-	return NewEvent(result)
-}
+// CheckDSNs parses and tests connections for all DSN strings.
+// Returns an Event with results (version 1 for single DSN, version 2 for multiple).
+func CheckDSNs(dsnStrings []string, tags map[string]string, retryTimes uint) (Event, error) {
+	results := make([]Result, 0, len(dsnStrings))
 
-// CheckMultiple tests connections to multiple databases and returns an Event with multiple results.
-func CheckMultiple(uris []dburl.URL, tags map[string]string, retryTimes uint) Event {
-	results := make([]Result, 0, len(uris))
-	for _, uri := range uris {
-		result := checkSingle(uri, tags, retryTimes)
+	for _, dsnString := range dsnStrings {
+		var result Result
+
+		if strings.HasPrefix(dsnString, "git+ssh://") {
+			gitURL, keyFile, host, err := parseGitDSN(dsnString)
+			if err != nil {
+				return Event{}, err
+			}
+			result = checkGit(gitURL, keyFile, host, tags, retryTimes)
+		} else {
+			dsn, err := DB(dsnString)
+			if err != nil {
+				return Event{}, err
+			}
+			result = checkSingle(*dsn, tags, retryTimes)
+		}
+
 		results = append(results, result)
 	}
-	return NewEventMultiple(results)
+
+	// Return version 1 for single DSN, version 2 for multiple
+	if len(results) == 1 {
+		return NewEvent(results[0]), nil
+	}
+	return NewEventMultiple(results), nil
 }
 
 // checkSingle tests a connection to a single database and returns a Result.
@@ -72,33 +86,33 @@ func checkSingle(uri dburl.URL, tags map[string]string, retryTimes uint) Result 
 
 	if strings.HasPrefix(uri.DSN, "bigquery") {
 		// Do some Bigquery specific check
-		fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connecting to Bigquery with "+uri.DSN)
+		Logger.Info(fmt.Sprintf("Connecting to Bigquery with %s", uri.DSN))
 		_, connErr := gorm.Open(bigquery.Open(uri.DSN), &gorm.Config{})
 		if connErr != nil {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection error "+connErr.Error())
+			Logger.Info(fmt.Sprintf("Connection error %s", connErr.Error()))
 		} else {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection acquired")
+			Logger.Info("Connection acquired")
 		}
 		// Set the query error same as the connection error to force an error response
 		queryErr = connErr
 	} else {
 		// Do some non-Bigquery checks
 		retry.Do(func() error {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection attempt ")
+			Logger.Info("Connection attempt")
 			db, connErrN := connect(uri)
 			if connErrN != nil {
-				fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection error "+connErrN.Error())
+				Logger.Info(fmt.Sprintf("Connection error %s", connErrN.Error()))
 			} else {
-				fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Connection acquired")
+				Logger.Info("Connection acquired")
 			}
 
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query attempt")
+			Logger.Info("Query attempt")
 			if db != nil {
 				_, queryErrN := query(db, uri.Driver)
 				if queryErrN != nil {
-					fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query error "+queryErrN.Error())
+					Logger.Info(fmt.Sprintf("Query error %s", queryErrN.Error()))
 				} else {
-					fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Query actioned")
+					Logger.Info("Query actioned")
 				}
 				queryErr = queryErrN
 			} else {
@@ -112,7 +126,7 @@ func checkSingle(uri dburl.URL, tags map[string]string, retryTimes uint) Result 
 			connErr = connErrN
 			return queryErr
 		}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) {
-			fmt.Fprintln(os.Stderr, time.Now().Format("03:04:05.000000")+" Retrying because of "+err.Error())
+			Logger.Info(fmt.Sprintf("Retrying because of %s", err.Error()))
 		}))
 	}
 
@@ -181,4 +195,25 @@ func query(db *sql.DB, driver string) (string, error) {
 	err := db.QueryRow(queryString).Scan(&name)
 
 	return name, err
+}
+
+// checkGit tests a connection to a Git repository and returns a Result.
+func checkGit(gitURL, keyPath, host string, tags map[string]string, retryTimes uint) Result {
+	var gitErr error
+
+	retry.Do(func() error {
+		Logger.Info(fmt.Sprintf("Git connection attempt to %s", gitURL))
+		err := connectToGitRepo(gitURL, keyPath)
+		if err != nil {
+			Logger.Info(fmt.Sprintf("Git connection error %s", err.Error()))
+		} else {
+			Logger.Info("Git clone successful")
+		}
+		gitErr = err
+		return gitErr
+	}, retry.Attempts(retryTimes), retry.OnRetry(func(u uint, err error) {
+		Logger.Info(fmt.Sprintf("Retrying because of %s", err.Error()))
+	}))
+
+	return NewResult(host, gitErr, nil, tags, retryTimes)
 }
