@@ -22,35 +22,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Label PR by branch
-      uses: actions/github-script@v9
-      if: github.event_name == 'pull_request'
-      with:
-        script: |
-          const branch = context.payload.pull_request.head.ref;
-          const labelMap = {
-            'enhancement':        ['enhancement/', 'feature/'],
-            'breaking-change':    ['breaking/', 'break/'],
-            'documentation':      ['docs/', 'doc/'],
-            'bug':                ['bug/', 'fix/'],
-            'tests':              ['test/', 'tests/'],
-            'dependency-update':  ['dep/', 'dependency/', 'dependency-update/'],
-            'snyk':               ['update/'],
-          };
-          const labels = [];
-          for (const [label, prefixes] of Object.entries(labelMap)) {
-            if (prefixes.some(p => branch.startsWith(p))) labels.push(label);
-          }
-          if (labels.length > 0) {
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              labels,
-            });
-          }
-
-    - name: Run integration tests  
+    - name: Run integration tests
       run: make integration-test
 
     - name: Format code
