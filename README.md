@@ -68,7 +68,7 @@ docker scout cves conntest:local
 docker scout cves --only-severity critical,high conntest:local
 
 # Compare against a base image to see what conntest adds
-docker scout compare conntest:local --to alpine:3.22
+docker scout compare conntest:local --to gcr.io/distroless/static-debian12:nonroot
 ```
 
 ## Development
