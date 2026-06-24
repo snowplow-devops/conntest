@@ -9,25 +9,20 @@ jobs:
     name: Compile & Test
     strategy:
       matrix:
-        go-version: ['1.24']
+        go-version: ['1.25']
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ matrix.go-version }}
 
-    - uses: TimonVS/pr-labeler-action@v5.0.0
-      if: github.event_name == 'pull_request'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Run integration tests  
+    - name: Run integration tests
       run: make integration-test
 
     - name: Format code

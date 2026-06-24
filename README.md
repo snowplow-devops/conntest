@@ -48,11 +48,34 @@ conntest check --dsn bigquery://:@engineering-sandbox/testantonis_invalid --retr
 {"id":"e50cea6f-adc1-4399-af88-9e6d439f5f16","name":"fabric:warehouse-connection-check","version":1,"emittedBy":"conntest","timestamp":"2024-04-08T11:38:22.039055+01:00","data":{"host":"engineering-sandbox","complete":false,"messages":["googleapi: Error 404: Not found: Dataset engineering-sandbox:testantonis_invalid, notFound"],"tags":{"aTag":"value","anotherTag":"value"},"attempts":0}}
 ```
 
+## Docker
+
+### Build
+
+```bash
+docker build -t conntest:local .
+```
+
+### CVE scanning with Docker Scout
+
+Requires the [Docker Scout CLI](https://docs.docker.com/scout/install/).
+
+```bash
+# List all CVEs in the image
+docker scout cves conntest:local
+
+# Summary view (critical/high only)
+docker scout cves --only-severity critical,high conntest:local
+
+# Compare against a base image to see what conntest adds
+docker scout compare conntest:local --to gcr.io/distroless/static-debian12:nonroot
+```
+
 ## Development
 
 ### Prerequisites
 
-- Go 1.24+ 
+- Go 1.25+
 - Docker (for integration tests)
 - Make
 
