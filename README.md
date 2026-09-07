@@ -1,6 +1,6 @@
 # conntest
 
-[![Actions Status][actions-image]][actions] [![Go Report Card][goreport-image]][goreport] [![Release][release-image]][releases] [![License][license-image]][license]
+[![Actions Status][actions-image]][actions] [![Release][release-image]][releases] [![License][license-image]][license]
 
 ## Overview
 
@@ -75,7 +75,7 @@ docker scout compare conntest:local --to gcr.io/distroless/static-debian12:nonro
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.27+
 - Docker (for integration tests)
 - Make
 
@@ -93,6 +93,7 @@ host> make build
 ### Available Make Targets
 
 #### Building
+
 ```bash
 # Build for local development
 make build
@@ -108,6 +109,7 @@ make cli-darwin-arm64
 ```
 
 #### Testing
+
 ```bash
 # Run unit tests with coverage
 make test
@@ -117,6 +119,7 @@ make integration-test
 ```
 
 #### Code Quality
+
 ```bash
 # Format code
 make format
@@ -132,6 +135,7 @@ make update
 ```
 
 #### Cleanup
+
 ```bash
 # Remove build artifacts
 make clean
@@ -145,7 +149,7 @@ All compiled assets are available under `build/compiled`.
 
 ### Copyright and license
 
-Conntest is copyright 2022-2025 Snowplow Analytics Ltd.
+Conntest is copyright 2022-current Snowplow Analytics Ltd.
 
 Licensed under the **[Apache License, Version 2.0][license]** (the "License");
 you may not use this software except in compliance with the License.
@@ -164,6 +168,3 @@ limitations under the License.
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
 [license]: http://www.apache.org/licenses/LICENSE-2.0
-
-[goreport-image]: https://goreportcard.com/badge/github.com/snowplow-devops/conntest
-[goreport]: https://goreportcard.com/report/github.com/snowplow-devops/conntest

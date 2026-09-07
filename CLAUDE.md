@@ -7,15 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Conntest is a command-line utility for validating connections to Snowplow-supported destinations including Snowflake, BigQuery, PostgreSQL, Databricks, and Git repositories. The tool outputs structured JSON events containing connection test results.
 
 **Version Requirements:**
-- Go 1.24+ (updated from 1.18)
-- Uses latest dependency versions as of 2025
+- Go 1.27+ (updated from 1.18)
+- Uses latest dependency versions as of 2026
 
 ## Development Environment
 
 This project uses standard Go tooling with Make for build automation:
 
 **Prerequisites:**
-- Go 1.24+
+- Go 1.27+
 - Docker (for integration tests)
 - Make
 
