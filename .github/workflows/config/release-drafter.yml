@@ -24,7 +24,7 @@ categories:
   - title: 'Documentation'
     label: 'documentation'
   - title: 'Bug Fixes'
-    labels: 'bug'
+    label: 'bug'
   - title: 'Dependency updates'
     labels:
       - 'dependency-update'
