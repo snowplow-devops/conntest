@@ -61,7 +61,11 @@ func SetupTestDatabase(ctx context.Context) (testcontainers.Container, string, e
 	containerReq := testcontainers.ContainerRequest{
 		Image:        "postgres:latest",
 		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor:   wait.ForListeningPort("5432/tcp"),
+		// Postgres logs "ready" once for the temporary init server and again for the real one.
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("5432/tcp"),
+			wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
+		),
 		Env: map[string]string{
 			"POSTGRES_USER":     user,
 			"POSTGRES_PASSWORD": password,
