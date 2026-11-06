@@ -28,7 +28,7 @@ import (
 
 	//nolint:gosec // This is a valid import for Postgres
 	_ "github.com/lib/pq"
-	"github.com/snowflakedb/gosnowflake"
+	"github.com/snowflakedb/gosnowflake/v2"
 	"github.com/xo/dburl"
 	"gorm.io/driver/bigquery"
 
