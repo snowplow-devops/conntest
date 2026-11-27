@@ -47,6 +47,41 @@ func DB(rawURI string) (*dburl.URL, error) {
 	return nil, errors.New("failed to parse DSN URI")
 }
 
+// postgresSchemaParam is a conntest-specific DSN query parameter for Postgres.
+// When set, conntest checks that the user can load into that schema. It is
+// stripped from the DSN before connecting, because lib/pq would otherwise send
+// it to the server as an (invalid) runtime parameter.
+const postgresSchemaParam = "schema"
+
+// postgresSchemaQuery returns whether the schema exists and whether the current
+// user has USAGE and CREATE on it. The loader creates tables but not the
+// schema, so the schema must already exist.
+const postgresSchemaQuery = `SELECT n.oid IS NOT NULL,
+  COALESCE(has_schema_privilege(n.oid, 'USAGE') AND has_schema_privilege(n.oid, 'CREATE'), false)
+FROM (SELECT 1) AS d LEFT JOIN pg_namespace n ON n.nspname = $1;`
+
+// extractPostgresSchema removes the conntest-specific schema parameter from a
+// Postgres DSN and returns the cleaned DSN and the schema (empty if not set).
+func extractPostgresSchema(dsn *dburl.URL) (*dburl.URL, string, error) {
+	if dsn.Driver != "postgres" {
+		return dsn, "", nil
+	}
+	q := dsn.Query()
+	if !q.Has(postgresSchemaParam) {
+		return dsn, "", nil
+	}
+	schema := q.Get(postgresSchemaParam)
+	q.Del(postgresSchemaParam)
+
+	u := dsn.URL
+	u.RawQuery = q.Encode()
+	cleaned, err := DB(u.String())
+	if err != nil {
+		return nil, "", err
+	}
+	return cleaned, schema, nil
+}
+
 // CheckDSNs parses and tests connections for all DSN strings.
 // Returns an Event with results (version 1 for single DSN, version 2 for multiple).
 func CheckDSNs(dsnStrings []string, tags map[string]string, retryTimes uint) (Event, error) {
@@ -66,7 +101,11 @@ func CheckDSNs(dsnStrings []string, tags map[string]string, retryTimes uint) (Ev
 			if err != nil {
 				return Event{}, err
 			}
-			result = checkSingle(*dsn, tags, retryTimes)
+			dsn, schema, err := extractPostgresSchema(dsn)
+			if err != nil {
+				return Event{}, err
+			}
+			result = checkSingle(*dsn, schema, tags, retryTimes)
 		}
 
 		results = append(results, result)
@@ -80,7 +119,8 @@ func CheckDSNs(dsnStrings []string, tags map[string]string, retryTimes uint) (Ev
 }
 
 // checkSingle tests a connection to a single database and returns a Result.
-func checkSingle(uri dburl.URL, tags map[string]string, retryTimes uint) Result {
+// schema is only used for Postgres and may be empty.
+func checkSingle(uri dburl.URL, schema string, tags map[string]string, retryTimes uint) Result {
 	var connErr, queryErr error
 	gosnowflake.GetLogger().SetOutput(io.Discard)
 
@@ -109,6 +149,9 @@ func checkSingle(uri dburl.URL, tags map[string]string, retryTimes uint) Result 
 			Logger.Info("Query attempt")
 			if db != nil {
 				_, queryErrN := query(db, uri.Driver)
+				if queryErrN == nil && schema != "" {
+					queryErrN = checkPostgresSchema(db, schema)
+				}
 				if queryErrN != nil {
 					Logger.Info(fmt.Sprintf("Query error %s", queryErrN.Error()))
 				} else {
@@ -195,6 +238,22 @@ func query(db *sql.DB, driver string) (string, error) {
 	err := db.QueryRow(queryString).Scan(&name)
 
 	return name, err
+}
+
+// checkPostgresSchema verifies that the current user can load into schema.
+func checkPostgresSchema(db *sql.DB, schema string) error {
+	var exists, allowed bool
+	if err := db.QueryRow(postgresSchemaQuery, schema).Scan(&exists, &allowed); err != nil {
+		return err
+	}
+	switch {
+	case !exists:
+		return fmt.Errorf("schema %q does not exist (the loader does not create it)", schema)
+	case !allowed:
+		return fmt.Errorf("user lacks USAGE and/or CREATE privileges on schema %q", schema)
+	default:
+		return nil
+	}
 }
 
 // checkGit tests a connection to a Git repository and returns a Result.
