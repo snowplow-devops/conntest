@@ -81,6 +81,9 @@ make clean
 # Databricks with OAuth M2M (Machine-to-Machine) using client credentials
 ./conntest check --dsn "databricks://client_id:client_secret@workspace.cloud.databricks.com/sql/1.0/endpoints/endpoint_id" --tags 'env=prod'
 
+# Postgres with schema privilege check and TLS verification
+./conntest check --dsn "postgres://user:pass@host:5432/db?schema=atomic&sslmode=verify-full&sslrootcert=/path/to/ca.pem" --tags 'env=test'
+
 # Git repository with SSH authentication (requires deploy key)
 ./conntest check --dsn "git+ssh://git@github.com/user/repo.git?keyfile=/path/to/deploy_key" --tags 'env=test'
 ./conntest check --dsn "git+ssh://git@gitlab.com/group/project.git?keyfile=/home/user/.ssh/gitlab_deploy_key" --retry-times 0 --tags 'env=prod'
@@ -114,6 +117,8 @@ make clean
 - Snowflake: Uses gosnowflake driver v1.15.0+ with information_schema queries
 - BigQuery: Uses GORM with bigquery driver, connection-only testing
 - PostgreSQL: Uses lib/pq driver v1.10.9+ with information_schema queries
+  - Optional conntest-only `schema=` query param checks the schema exists and the user has USAGE+CREATE on it; the loader creates tables, not the schema (param stripped before connecting)
+  - TLS via native lib/pq params: `sslmode=verify-full|verify-ca`, `sslrootcert=/path/to/ca.pem`
 - Databricks: Uses databricks-sql-go driver v1.8.0+ with simple SELECT queries
   - PAT Authentication: `databricks://token:pat_token@host/path`
   - OAuth M2M Authentication: `databricks-oauth://client_id:client_secret@host/path`

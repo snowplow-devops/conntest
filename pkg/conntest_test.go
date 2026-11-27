@@ -98,3 +98,59 @@ func TestDB_DatabricksOAuth(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractPostgresSchema(t *testing.T) {
+	tests := []struct {
+		name       string
+		rawURI     string
+		wantSchema string
+		wantInDSN  []string
+		notInDSN   []string
+	}{
+		{
+			name:       "schema is extracted and stripped, TLS params kept",
+			rawURI:     "postgres://user:pass@db.example.com:5432/snowplow?schema=atomic&sslmode=verify-full&sslrootcert=%2Ftmp%2Fca.pem",
+			wantSchema: "atomic",
+			wantInDSN:  []string{"sslmode=verify-full", "sslrootcert=", "db.example.com"},
+			notInDSN:   []string{"schema"},
+		},
+		{
+			name:       "no schema param leaves DSN untouched",
+			rawURI:     "postgres://user:pass@db.example.com:5432/snowplow?sslmode=disable",
+			wantSchema: "",
+			wantInDSN:  []string{"sslmode=disable"},
+		},
+		{
+			name:       "non-postgres drivers are ignored",
+			rawURI:     "snowflake://user:pass@acct.snowflakecomputing.com/db?schema=atomic",
+			wantSchema: "",
+			wantInDSN:  []string{"schema=atomic"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dsn, err := DB(tt.rawURI)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			cleaned, schema, err := extractPostgresSchema(dsn)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if schema != tt.wantSchema {
+				t.Errorf("schema = %q, want %q", schema, tt.wantSchema)
+			}
+			for _, s := range tt.wantInDSN {
+				if !strings.Contains(cleaned.String(), s) {
+					t.Errorf("expected %q in DSN %q", s, cleaned.String())
+				}
+			}
+			for _, s := range tt.notInDSN {
+				if strings.Contains(cleaned.String(), s) || strings.Contains(cleaned.DSN, s) {
+					t.Errorf("did not expect %q in DSN %q / %q", s, cleaned.String(), cleaned.DSN)
+				}
+			}
+		})
+	}
+}

@@ -48,6 +48,32 @@ conntest check --dsn bigquery://:@engineering-sandbox/testantonis_invalid --retr
 {"id":"e50cea6f-adc1-4399-af88-9e6d439f5f16","name":"fabric:warehouse-connection-check","version":1,"emittedBy":"conntest","timestamp":"2024-04-08T11:38:22.039055+01:00","data":{"host":"engineering-sandbox","complete":false,"messages":["googleapi: Error 404: Not found: Dataset engineering-sandbox:testantonis_invalid, notFound"],"tags":{"aTag":"value","anotherTag":"value"},"attempts":0}}
 ```
 
+### Postgres
+
+```shell
+conntest check --dsn 'postgres://user:pass@host:5432/database?schema=atomic&sslmode=verify-full&sslrootcert=/path/to/ca.pem&connect_timeout=45'
+```
+
+Query parameters:
+
+| Parameter | Meaning |
+|---|---|
+| `schema` | Optional, conntest-specific. Checks that the schema exists and that the user has `USAGE` and `CREATE` on it. The loader creates tables but not the schema itself. Removed from the DSN before connecting. |
+| `sslmode` | `verify-full` checks the CA and the hostname. `verify-ca` checks only the CA. `require` encrypts without verifying anything. `disable` turns TLS off. |
+| `sslrootcert` | Path to a PEM CA certificate. Leave it out to use the system roots. |
+
+Any other parameter is passed to [lib/pq](https://pkg.go.dev/github.com/lib/pq). If a password contains a colon, `xo/dburl` cannot parse the DSN.
+
+Mapping from the Console Postgres destination fields (`target_postgres` stack inputs):
+
+| Console field | DSN |
+|---|---|
+| `host`, `port`, `database`, `username`, `password` | `postgres://username:password@host:port/database` (URL-encode the password) |
+| `schema` | `schema=<schema>` |
+| `verify_hostname = true` | `sslmode=verify-full` |
+| `verify_hostname = false` | `sslmode=verify-ca` |
+| `ca_certificate` (PEM, optional) | write it to a file and add `sslrootcert=<file>`; leave it out when empty |
+
 ## Docker
 
 ### Build

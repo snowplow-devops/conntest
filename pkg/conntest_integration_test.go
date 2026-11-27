@@ -15,8 +15,10 @@ package pkg
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -50,6 +52,63 @@ func TestCheck(t *testing.T) {
 
 	if !reflect.DeepEqual(event.Data, expected) {
 		t.Fail()
+	}
+}
+
+func TestCheckPostgresSchema(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration: not running")
+	}
+
+	ctx := context.Background()
+	dbC, dsnStr, err := SetupTestDatabase(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbC.Terminate(ctx)
+
+	admin, err := sql.Open("postgres", dsnStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer admin.Close()
+	for _, stmt := range []string{
+		`CREATE SCHEMA existing`,
+		`CREATE ROLE restricted LOGIN PASSWORD 'restricted'`,
+	} {
+		if _, err := admin.Exec(stmt); err != nil {
+			t.Fatalf("%s: %v", stmt, err)
+		}
+	}
+	restrictedDSN := strings.Replace(dsnStr, "snowplow:snowplow@", "restricted:restricted@", 1)
+
+	tests := []struct {
+		name         string
+		dsn          string
+		schema       string
+		wantComplete bool
+		wantMessage  string
+	}{
+		{"existing schema, owner", dsnStr, "existing", true, ""},
+		{"missing schema, owner of database", dsnStr, "atomic", false, "does not exist"},
+		{"existing schema, no privileges", restrictedDSN, "existing", false, "lacks USAGE and/or CREATE"},
+		{"missing schema, restricted", restrictedDSN, "atomic", false, "does not exist"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event, err := CheckDSNs([]string{tt.dsn + "&schema=" + tt.schema}, map[string]string{}, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			res := event.Data.(Result)
+			if res.Complete != tt.wantComplete {
+				t.Fatalf("complete = %v, want %v (messages: %v)", res.Complete, tt.wantComplete, res.Messages)
+			}
+			if tt.wantMessage != "" && (len(res.Messages) == 0 || !strings.Contains(res.Messages[0], tt.wantMessage)) {
+				t.Errorf("messages = %v, want one containing %q", res.Messages, tt.wantMessage)
+			}
+		})
 	}
 }
 
