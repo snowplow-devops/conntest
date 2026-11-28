@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-28
+
 ### Added
 
 - `CHANGELOG.md`, with entries back-filled from the git history, GitHub releases and pull requests.
@@ -183,7 +185,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[unreleased]: https://github.com/snowplow-devops/conntest/compare/v0.7.2...HEAD
+[unreleased]: https://github.com/snowplow-devops/conntest/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/snowplow-devops/conntest/compare/v0.7.2...v0.9.0
 [0.7.2]: https://github.com/snowplow-devops/conntest/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/snowplow-devops/conntest/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/snowplow-devops/conntest/compare/v0.6.1...v0.7.0
