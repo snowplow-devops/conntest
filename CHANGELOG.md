@@ -13,7 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The release workflow now uses the version's `CHANGELOG.md` section as the GitHub release notes, and fails if a release tag has no entry.
 - Bumped transitive `golang.org/x/*` modules (`mod`, `sync`, `sys`, `telemetry`, `term`, `text`, `tools`).
+
+### Removed
+
+- The release-drafter workflow and its config. Release notes now come from `CHANGELOG.md`.
 
 ### Security
 

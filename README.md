@@ -147,6 +147,21 @@ All compiled assets are available under `build/compiled`.
 
 **Note:** The `make test` command generates a code coverage file which can be found at `build/coverage/coverage.html`.
 
+### Releasing
+
+Changes are recorded in [CHANGELOG.md](CHANGELOG.md), following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+1. Add your changes under `## [Unreleased]` in each pull request.
+2. When releasing, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, add a new empty `## [Unreleased]` above it, and update the comparison links at the bottom of the file. Merge this to `main`.
+3. Tag `main` and push the tag:
+
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+The release workflow uses the `## [X.Y.Z]` section as the GitHub release notes and fails if it is missing. Release candidates (`vX.Y.Z-rc1`) are published as pre-releases and use the `## [X.Y.Z]` section if it exists.
+
 ### Copyright and license
 
 Conntest is copyright 2022-current Snowplow Analytics Ltd.

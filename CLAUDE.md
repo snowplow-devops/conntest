@@ -66,6 +66,11 @@ make update
 make clean
 ```
 
+### Releasing
+- Every PR adds its changes under `## [Unreleased]` in `CHANGELOG.md` (Keep a Changelog 1.1.0).
+- To release: rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh `## [Unreleased]`, update the comparison links at the bottom, merge to `main`, then push a `vX.Y.Z` tag.
+- `.github/workflows/release.yml` copies the `## [X.Y.Z]` section into the GitHub release notes and fails if it is missing. `vX.Y.Z-rcN` tags are pre-releases and use the `## [X.Y.Z]` section if present.
+
 ### Running the Application
 ```shell
 # Basic connection test

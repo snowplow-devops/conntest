@@ -13,6 +13,39 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      # Use this version's CHANGELOG.md section ("## [<version>]" up to the next
+      # "## [" heading) as the release notes. This runs first so a missing entry
+      # fails the release before the integration tests and build.
+      # Release candidates (e.g. v0.8.0-rc1) use their base version's section if
+      # it exists, and a pointer to CHANGELOG.md otherwise.
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+          BASE="${VERSION%%-*}"
+          NOTES="${RUNNER_TEMP}/release-notes.md"
+
+          awk -v hdr="## [${BASE}]" '
+            index($0, "## [") == 1 { if (found) exit; if (index($0, hdr) == 1) { found = 1 }; next }
+            found && /^\[[^]]+\]: / { exit }
+            found { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' > "$NOTES"
+
+          if [ "$VERSION" != "$BASE" ]; then
+            if [ ! -s "$NOTES" ]; then
+              echo "Pre-release of ${BASE}. See [CHANGELOG.md](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.md) for unreleased changes." > "$NOTES"
+            fi
+          elif [ ! -s "$NOTES" ]; then
+            echo "::error::No CHANGELOG.md entry for ${VERSION}. Add a '## [${VERSION}] - YYYY-MM-DD' section before tagging."
+            exit 1
+          fi
+
+          echo "path=${NOTES}" >> "$GITHUB_OUTPUT"
+          echo "Release notes for ${TAG}:"
+          cat "$NOTES"
+
       - name: Install Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
@@ -30,4 +63,5 @@ jobs:
         with:
           draft: false
           prerelease: ${{ contains(github.ref, '-') }}
+          body_path: ${{ steps.notes.outputs.path }}
           files: ./build/compiled/*
