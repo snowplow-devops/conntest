@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `CHANGELOG.md`, with entries back-filled from the git history, GitHub releases and pull requests.
 
+### Changed
+
+- Bumped transitive `golang.org/x/*` modules (`mod`, `sync`, `sys`, `telemetry`, `term`, `text`, `tools`).
+
+### Security
+
+- Bumped Go from 1.27.3 to 1.27.4 to fix GO-2026-6859 (`net/http`: HTTP/1 server crash due to a `MaxBytesReader` header race).
+- Bumped `go.opentelemetry.io/otel` and its sibling modules (`trace`, `metric`, `sdk`, `sdk/metric`) from v1.46.0 to v1.47.0 to fix GO-2026-6974 (attribute length limit bypass via U+FFFD runes) and GO-2026-6975 (memory allocation amplification in W3C baggage parsing).
+- Bumped `golang.org/x/crypto` from v0.58.0 to v0.59.0 to fix GO-2026-5932 (the unmaintained `openpgp` package). conntest only imports `x/crypto/ssh`, so this was a module-level finding only.
+
 ## [0.7.2] - 2026-11-06
 
 ### Changed
